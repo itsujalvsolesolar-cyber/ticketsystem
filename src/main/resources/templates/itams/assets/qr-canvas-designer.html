@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('QR Canvas Designer')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 fw-bold mb-1">QR Canvas Designer</h1>
+            <p class="text-secondary mb-0">Drag, drop, and arrange elements freely to create your perfect QR sticker template.</p>
+        </div>
+        <div>
+            <button onclick="clearCanvas()" class="btn btn-outline-danger me-2">
+                <i class="bi bi-trash me-2"></i>Clear Canvas
+            </button>
+            <button onclick="downloadCanvas()" class="btn btn-outline-primary me-2">
+                <i class="bi bi-download me-2"></i>Download PNG
+            </button>
+            <button onclick="saveTemplate()" class="btn btn-success">
+                <i class="bi bi-save me-2"></i>Save as Default
+            </button>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Toolbar -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-grid-3x3-gap me-2"></i>Elements
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">Click an element to add it to the canvas.</p>
+
+                    <button class="btn btn-outline-secondary w-100 mb-2 text-start" onclick="addElement('company')">
+                        <i class="bi bi-building text-primary me-2"></i>Company Name
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mb-2 text-start" onclick="addElement('qr')">
+                        <i class="bi bi-qr-code text-primary me-2"></i>QR Code
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mb-2 text-start" onclick="addElement('name')">
+                        <i class="bi bi-tag text-primary me-2"></i>Asset Name
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mb-2 text-start" onclick="addElement('tag')">
+                        <i class="bi bi-upc text-primary me-2"></i>Asset Tag
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mb-2 text-start" onclick="addElement('serial')">
+                        <i class="bi bi-hash text-primary me-2"></i>Serial Number
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mb-2 text-start" onclick="addElement('text')">
+                        <i class="bi bi-type text-primary me-2"></i>Custom Text
+                    </button>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-sliders me-2"></i>Canvas Settings
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label small">Canvas Size</label>
+                        <select class="form-select form-select-sm" id="canvasSize" onchange="updateCanvasSize()">
+                            <option value="small">Small (200x130px)</option>
+                            <option value="medium" selected>Medium (300x200px)</option>
+                            <option value="large">Large (400x270px)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small">Background</label>
+                        <input type="color" class="form-control form-control-sm" id="bgColor" value="#ffffff" onchange="updateCanvasBg()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="col-md-9">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body d-flex justify-content-center align-items-center bg-light" style="min-height: 600px; overflow: auto;">
+
+                    <!-- The Canvas -->
+                    <div id="designCanvas" class="position-relative bg-white border shadow-sm"
+                         style="width: 300px; height: 200px; background-image: linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px); background-size: 10px 10px;">
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Properties Modal -->
+<div class="modal fade" id="propertiesModal" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title">Edit Element</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label small">Text Content</label>
+                    <input type="text" id="propText" class="form-control form-control-sm">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Font Size</label>
+                    <select id="propFontSize" class="form-select form-select-sm">
+                        <option value="10">10px</option>
+                        <option value="12">12px</option>
+                        <option value="14" selected>14px</option>
+                        <option value="16">16px</option>
+                        <option value="18">18px</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small">Color</label>
+                    <input type="color" id="propColor" class="form-control form-control-sm" value="#000000">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="applyProperties()">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+    let elementCounter = 0;
+    let selectedElement = null;
+    let isDragging = false;
+    let dragOffset = { x: 0, y: 0 };
+    let currentDragElement = null; // Add this to track the element being dragged
+
+
+    const canvasSizes = {
+        'small': { width: '200px', height: '130px' },
+        'medium': { width: '300px', height: '200px' },
+        'large': { width: '400px', height: '270px' }
+    };
+
+    const templates = {
+        'company': '<div style="font-size: 14px; font-weight: bold; color: #0d6efd;">YOUR COMPANY</div>',
+        'qr': '<div style="width: 60px; height: 60px; background: repeating-linear-gradient(45deg, #000, #000 4px, #fff 4px, #fff 8px); margin: 0 auto;" title="QR Code"></div>',
+        'name': '<div style="font-size: 14px; font-weight: bold;">Asset Name</div>',
+        'tag': '<span class="badge bg-primary" style="font-size: 12px;">AST-0001</span>',
+        'serial': '<div style="font-size: 11px; color: #6c757d;"><i class="bi bi-hash me-1"></i>SN-12345</div>',
+        'text': '<div style="font-size: 14px;">Custom Text</div>'
+    };
+
+    function addElement(type) {
+        elementCounter++;
+        const canvas = document.getElementById('designCanvas');
+        const element = document.createElement('div');
+        element.className = 'canvas-item position-absolute';
+        element.id = `el-${elementCounter}`;
+        element.dataset.type = type;
+
+        element.innerHTML = `${templates[type]}<div class="delete-btn position-absolute" style="top: -8px; right: -8px; width: 18px; height: 18px; background: #dc3545; color: white; border-radius: 50%; display: none; align-items: center; justify-content: center; font-size: 12px; cursor: pointer; border: 2px solid white; z-index: 20;" onclick="deleteElement('${element.id}', event)">×</div>`;
+
+        // Stagger positions
+        const left = 20 + (elementCounter * 15) % 100;
+        const top = 20 + (elementCounter * 15) % 100;
+        element.style.left = `${left}px`;
+        element.style.top = `${top}px`;
+        element.style.cursor = 'move';
+        element.style.zIndex = '10';
+        element.style.padding = '4px 8px';
+        element.style.border = '2px solid transparent';
+        element.style.borderRadius = '4px';
+        element.style.userSelect = 'none';
+
+        element.addEventListener('mousedown', startDrag);
+        element.addEventListener('click', (e) => {
+            if(!isDragging) selectElement(e);
+        });
+
+        canvas.appendChild(element);
+    }
+
+    function startDrag(e) {
+        if (e.target.classList.contains('delete-btn')) return;
+        isDragging = false;
+        const element = e.currentTarget;
+        dragOffset.x = e.clientX - element.offsetLeft;
+        dragOffset.y = e.clientY - element.offsetTop;
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        e.preventDefault();
+    }
+
+    function drag(e) {
+        isDragging = true;
+        if (!selectedElement) return;
+        const canvas = document.getElementById('designCanvas');
+
+        let x = e.clientX - dragOffset.x;
+        let y = e.clientY - dragOffset.y;
+
+        // Boundary checks
+        x = Math.max(0, Math.min(x, canvas.offsetWidth - selectedElement.offsetWidth));
+        y = Math.max(0, Math.min(y, canvas.offsetHeight - selectedElement.offsetHeight));
+
+        selectedElement.style.left = `${x}px`;
+        selectedElement.style.top = `${y}px`;
+    }
+
+    function stopDrag() {
+        setTimeout(() => { isDragging = false; }, 50);
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+
+    function selectElement(e) {
+        const element = e.target.classList.contains('canvas-item') ? e.target : e.target.closest('.canvas-item');
+        if (!element) return;
+
+        // Reset all elements
+        document.querySelectorAll('.canvas-item').forEach(el => {
+            el.classList.remove('selected');
+            el.style.borderColor = 'transparent';
+            el.querySelector('.delete-btn').style.display = 'none';
+        });
+
+        // Highlight selected
+        element.classList.add('selected');
+        element.style.borderColor = '#0d6efd';
+        element.querySelector('.delete-btn').style.display = 'flex';
+        selectedElement = element;
+
+        // Populate modal safely (QR codes don't have text, so we check first)
+        const textEl = element.querySelector('div:not(.delete-btn)') || element.querySelector('span') || element;
+        if (textEl && textEl.innerText.trim() !== '' && element.dataset.type !== 'qr') {
+            document.getElementById('propText').value = textEl.innerText.trim();
+        } else {
+            document.getElementById('propText').value = '';
+        }
+
+        const modal = new bootstrap.Modal(document.getElementById('propertiesModal'));
+        modal.show();
+    }
+
+    function deleteElement(id, event) {
+        event.stopPropagation();
+        const element = document.getElementById(id);
+        if (element) {
+            element.remove();
+            selectedElement = null;
+        }
+    }
+
+    function applyProperties() {
+        if (!selectedElement) return;
+        const text = document.getElementById('propText').value;
+        const size = document.getElementById('propFontSize').value;
+        const color = document.getElementById('propColor').value;
+
+        const textEl = selectedElement.querySelector('div:not(.delete-btn)') || selectedElement.querySelector('span') || selectedElement;
+        if (textEl && selectedElement.dataset.type !== 'qr') {
+            textEl.innerText = text;
+            textEl.style.fontSize = `${size}px`;
+            textEl.style.color = color;
+        }
+        bootstrap.Modal.getInstance(document.getElementById('propertiesModal')).hide();
+    }
+
+    function updateCanvasSize() {
+        const size = document.getElementById('canvasSize').value;
+        const canvas = document.getElementById('designCanvas');
+        canvas.style.width = canvasSizes[size].width;
+        canvas.style.height = canvasSizes[size].height;
+    }
+
+    function updateCanvasBg() {
+        document.getElementById('designCanvas').style.backgroundColor = document.getElementById('bgColor').value;
+    }
+
+    function clearCanvas() {
+        if (confirm('Clear all elements?')) {
+            document.getElementById('designCanvas').innerHTML = '';
+            elementCounter = 0;
+            selectedElement = null;
+        }
+    }
+
+    function downloadCanvas() {
+        const canvas = document.getElementById('designCanvas');
+        document.querySelectorAll('.canvas-item').forEach(el => {
+            el.classList.remove('selected');
+            el.style.borderColor = 'transparent';
+            el.querySelector('.delete-btn').style.display = 'none';
+        });
+
+        html2canvas(canvas, { scale: 2, backgroundColor: document.getElementById('bgColor').value }).then(canvasEl => {
+            const link = document.createElement('a');
+            link.download = 'qr-design.png';
+            link.href = canvasEl.toDataURL();
+            link.click();
+        });
+    }
+
+    function saveTemplate() {
+        // We will connect this to your backend API in the next step!
+        alert('Template saved! (Backend API connection coming next)');
+    }
+
+    function startDrag(e) {
+        if (e.target.classList.contains('delete-btn')) return;
+        isDragging = false; // Will be set to true on mousemove
+        currentDragElement = e.currentTarget; // Store the element being dragged
+        dragOffset.x = e.clientX - currentDragElement.offsetLeft;
+        dragOffset.y = e.clientY - currentDragElement.offsetTop;
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        e.preventDefault();
+    }
+
+    function drag(e) {
+        isDragging = true;
+        if (!currentDragElement) return; // Use currentDragElement instead of selectedElement
+        const canvas = document.getElementById('designCanvas');
+        let x = e.clientX - dragOffset.x;
+        let y = e.clientY - dragOffset.y;
+        // Boundary checks
+        x = Math.max(0, Math.min(x, canvas.offsetWidth - currentDragElement.offsetWidth));
+        y = Math.max(0, Math.min(y, canvas.offsetHeight - currentDragElement.offsetHeight));
+        currentDragElement.style.left = `${x}px`;
+        currentDragElement.style.top = `${y}px`;
+    }
+
+    function stopDrag() {
+        setTimeout(() => { isDragging = false; }, 50);
+        currentDragElement = null; // Clear the drag element
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+    }
+
+    // Auto-add a default layout on load
+    window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+            addElement('company');
+            addElement('qr');
+            addElement('name');
+            addElement('tag');
+        }, 300);
+    });
+</script>
+</body>
+</html>

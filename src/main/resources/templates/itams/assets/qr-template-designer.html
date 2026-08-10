@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('QR Template Designer')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 fw-bold mb-1">QR Code Template Designer</h1>
+            <p class="text-secondary mb-0">Design the default QR sticker template for all assets</p>
+        </div>
+        <div>
+            <button onclick="resetToDefaults()" class="btn btn-outline-danger me-2">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>Reset
+            </button>
+            <button onclick="saveTemplate()" class="btn btn-success">
+                <i class="bi bi-save me-2"></i>Save as Default
+            </button>
+        </div>
+    </div>
+
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Global Template:</strong> This design will be applied to ALL asset QR codes across the system.
+        Changes here will affect QR code downloads everywhere.
+    </div>
+
+    <div class="row g-4">
+        <!-- Design Controls -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-palette me-2"></i>Layout Settings
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Label Size</label>
+                        <select id="labelSize" class="form-select" onchange="updatePreview()">
+                            <option value="small">Small (2" x 1") - Wallet Size</option>
+                            <option value="medium" selected>Medium (3" x 2") - Standard</option>
+                            <option value="large">Large (4" x 3") - Desktop</option>
+                            <option value="xl">Extra Large (4" x 6") - Shipping</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Color Scheme</label>
+                        <select id="colorScheme" class="form-select" onchange="updatePreview()">
+                            <option value="default">Default (Blue)</option>
+                            <option value="dark">Dark Mode</option>
+                            <option value="minimal">Minimal (Black & White)</option>
+                            <option value="corporate">Corporate (Gray)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-building me-2"></i>Company Branding
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" id="companyName" class="form-control" value="YOUR COMPANY" oninput="updatePreview()">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Footer Text</label>
+                        <input type="text" id="footerText" class="form-control" value="Asset Management System" oninput="updatePreview()">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-ui-checks me-2"></i>Asset Fields to Display
+                </div>
+                <div class="card-body">
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showLogo" checked onchange="updatePreview()">
+                        <label class="form-check-label">Company Logo</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showQrCode" checked onchange="updatePreview()">
+                        <label class="form-check-label">QR Code</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showAssetName" checked onchange="updatePreview()">
+                        <label class="form-check-label">Asset Name</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showAssetTag" checked onchange="updatePreview()">
+                        <label class="form-check-label">Asset Tag</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showSerialNumber" checked onchange="updatePreview()">
+                        <label class="form-check-label">Serial Number</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showCategory" onchange="updatePreview()">
+                        <label class="form-check-label">Category</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showDepartment" onchange="updatePreview()">
+                        <label class="form-check-label">Department</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showLocation" onchange="updatePreview()">
+                        <label class="form-check-label">Location</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showPurchaseDate" onchange="updatePreview()">
+                        <label class="form-check-label">Purchase Date</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showWarranty" onchange="updatePreview()">
+                        <label class="form-check-label">Warranty Info</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showStatus" onchange="updatePreview()">
+                        <label class="form-check-label">Status</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showAssignedTo" onchange="updatePreview()">
+                        <label class="form-check-label">Assigned To</label>
+                    </div>
+                    <div class="mb-2 form-check">
+                        <input type="checkbox" class="form-check-input" id="showBarcode" onchange="updatePreview()">
+                        <label class="form-check-label">Barcode</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm bg-light">
+                <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-eye me-2"></i>Live Preview (Sample Asset)</span>
+                    <button onclick="downloadPreviewPNG()" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-download me-1"></i>Download Preview
+                    </button>
+                </div>
+                <div class="card-body d-flex justify-content-center align-items-center" style="min-height: 600px;">
+
+                    <!-- The Sticker Preview -->
+                    <div id="printableSticker" class="bg-white border rounded p-4 text-center shadow-sm"
+                         style="width: 300px; height: 200px; transition: all 0.3s ease;">
+
+                        <!-- Logo Section -->
+                        <div id="logoSection" class="mb-3 pb-2 border-bottom">
+                            <div class="text-primary fw-bold fs-5" id="previewCompanyName">YOUR COMPANY</div>
+                            <div class="text-muted small" id="previewFooterText">Asset Management System</div>
+                        </div>
+
+                        <!-- QR Code Section -->
+                        <div id="qrSection" class="mb-3">
+                            <div class="d-inline-block bg-white p-2 border rounded">
+                                <div class="bg-secondary text-white d-flex align-items-center justify-content-center"
+                                     style="width: 80px; height: 80px;">
+                                    <i class="bi bi-qr-code fs-1"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Asset Name -->
+                        <div id="assetNameSection">
+                            <h5 class="fw-bold mb-2">Dell Latitude Laptop</h5>
+                        </div>
+
+                        <!-- Asset Tag -->
+                        <div id="assetTagSection" class="mb-1">
+                            <span class="badge bg-primary">TC-0001</span>
+                        </div>
+
+                        <!-- Serial Number -->
+                        <div id="serialNumberSection" class="text-muted small mb-2">
+                            <i class="bi bi-upc me-1"></i>SN-6563595
+                        </div>
+
+                        <!-- Category -->
+                        <div id="categorySection" class="text-muted small mb-1">
+                            <i class="bi bi-folder me-1"></i>Laptops
+                        </div>
+
+                        <!-- Department -->
+                        <div id="departmentSection" class="text-muted small mb-1">
+                            <i class="bi bi-building me-1"></i>IT Department
+                        </div>
+
+                        <!-- Location -->
+                        <div id="locationSection" class="text-muted small mb-1">
+                            <i class="bi bi-geo-alt me-1"></i>Office A - Floor 2
+                        </div>
+
+                        <!-- Purchase Date -->
+                        <div id="purchaseDateSection" class="text-muted small mb-1">
+                            <i class="bi bi-calendar me-1"></i>Purchased: 2024-01-15
+                        </div>
+
+                        <!-- Warranty -->
+                        <div id="warrantySection" class="text-muted small mb-1">
+                            <i class="bi bi-shield-check me-1"></i>Warranty: 3 Years
+                        </div>
+
+                        <!-- Status -->
+                        <div id="statusSection" class="mb-2">
+                            <span class="badge bg-success">Active</span>
+                        </div>
+
+                        <!-- Assigned To -->
+                        <div id="assignedToSection" class="text-muted small mb-2">
+                            <i class="bi bi-person me-1"></i>Assigned to: John Doe
+                        </div>
+
+                        <!-- Barcode (Optional) -->
+                        <div id="barcodeSection" class="mt-2 d-none">
+                            <div class="bg-white p-2">
+                                <div style="font-family: 'Libre Barcode 39', cursive; font-size: 24px; letter-spacing: 2px;">
+                                    TC-0001
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="mt-3 pt-2 border-top">
+                            <div class="small text-muted">
+                                Scanned: <span id="currentDate">2026-07-31</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<style>
+    /* Color Schemes */
+    .scheme-dark {
+        background-color: #1a1a2e !important;
+        color: #eee !important;
+    }
+    .scheme-dark .badge { background-color: #16213e !important; color: #fff !important; }
+    .scheme-dark .border-bottom { border-color: #0f3460 !important; }
+
+    .scheme-minimal {
+        background-color: #fff !important;
+        color: #000 !important;
+    }
+    .scheme-minimal .badge { background-color: #000 !important; color: #fff !important; }
+
+    .scheme-corporate {
+        background-color: #f8f9fa !important;
+        color: #495057 !important;
+    }
+    .scheme-corporate .badge { background-color: #6c757d !important; color: #fff !important; }
+
+    @media print {
+        body * { visibility: hidden; }
+        #printableSticker, #printableSticker * { visibility: visible; }
+        #printableSticker {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border: 1px dashed #000 !important;
+            box-shadow: none !important;
+        }
+    }
+</style>
+
+<script>
+    const sizes = {
+        'small': { width: '200px', height: '130px', padding: 'p-2' },
+        'medium': { width: '300px', height: '200px', padding: 'p-3' },
+        'large': { width: '400px', height: '270px', padding: 'p-4' },
+        'xl': { width: '400px', height: '600px', padding: 'p-4' }
+    };
+
+    function updatePreview() {
+        const sticker = document.getElementById('printableSticker');
+        const labelSize = document.getElementById('labelSize').value;
+        const colorScheme = document.getElementById('colorScheme').value;
+
+        // Update size
+        const selected = sizes[labelSize];
+        sticker.style.width = selected.width;
+        sticker.style.height = selected.height;
+        sticker.className = 'bg-white border rounded ' + selected.padding + ' text-center shadow-sm';
+
+        // Update color scheme
+        sticker.classList.remove('scheme-dark', 'scheme-minimal', 'scheme-corporate');
+        if (colorScheme === 'dark') sticker.classList.add('scheme-dark');
+        else if (colorScheme === 'minimal') sticker.classList.add('scheme-minimal');
+        else if (colorScheme === 'corporate') sticker.classList.add('scheme-corporate');
+
+        // Update company info
+        document.getElementById('previewCompanyName').textContent = document.getElementById('companyName').value || 'YOUR COMPANY';
+        document.getElementById('previewFooterText').textContent = document.getElementById('footerText').value || 'Asset Management System';
+
+        // Toggle sections
+        toggleSection('logoSection', 'showLogo');
+        toggleSection('qrSection', 'showQrCode');
+        toggleSection('assetNameSection', 'showAssetName');
+        toggleSection('assetTagSection', 'showAssetTag');
+        toggleSection('serialNumberSection', 'showSerialNumber');
+        toggleSection('categorySection', 'showCategory');
+        toggleSection('departmentSection', 'showDepartment');
+        toggleSection('locationSection', 'showLocation');
+        toggleSection('purchaseDateSection', 'showPurchaseDate');
+        toggleSection('warrantySection', 'showWarranty');
+        toggleSection('statusSection', 'showStatus');
+        toggleSection('assignedToSection', 'showAssignedTo');
+        toggleSection('barcodeSection', 'showBarcode');
+    }
+
+    function toggleSection(sectionId, checkboxId) {
+        const element = document.getElementById(sectionId);
+        const checkbox = document.getElementById(checkboxId);
+        if (element && checkbox) {
+            element.style.display = checkbox.checked ? 'block' : 'none';
+        }
+    }
+
+    function downloadPreviewPNG() {
+        const sticker = document.getElementById('printableSticker');
+        html2canvas(sticker, { scale: 2, backgroundColor: '#ffffff' })
+            .then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'qr-template-preview.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+    }
+
+    function saveTemplate() {
+        const templateData = {
+            templateName: 'Default QR Template',
+            isDefault: true,
+            labelSize: document.getElementById('labelSize').value,
+            colorScheme: document.getElementById('colorScheme').value,
+            widthPx: parseInt(sizes[document.getElementById('labelSize').value].width),
+            heightPx: parseInt(sizes[document.getElementById('labelSize').value].height),
+            showLogo: document.getElementById('showLogo').checked,
+            showQrCode: document.getElementById('showQrCode').checked,
+            showAssetName: document.getElementById('showAssetName').checked,
+            showAssetTag: document.getElementById('showAssetTag').checked,
+            showSerialNumber: document.getElementById('showSerialNumber').checked,
+            showCategory: document.getElementById('showCategory').checked,
+            showDepartment: document.getElementById('showDepartment').checked,
+            showLocation: document.getElementById('showLocation').checked,
+            showPurchaseDate: document.getElementById('showPurchaseDate').checked,
+            showWarranty: document.getElementById('showWarranty').checked,
+            showStatus: document.getElementById('showStatus').checked,
+            showAssignedTo: document.getElementById('showAssignedTo').checked,
+            showBarcode: document.getElementById('showBarcode').checked,
+            companyName: document.getElementById('companyName').value,
+            footerText: document.getElementById('footerText').value
+        };
+
+        fetch('/itams/assets/api/qr-template', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(templateData)
+        })
+            .then(response => {
+                if (response.ok) {
+                    showAlert('success', '✅ Template saved successfully! This design will now be used for all asset QR codes.');
+                } else {
+                    showAlert('error', ' Failed to save template. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showAlert('error', '❌ An error occurred while saving the template.');
+            });
+    }
+
+    function resetToDefaults() {
+        if (confirm('Are you sure you want to reset all settings to defaults?')) {
+            location.reload();
+        }
+    }
+
+    function showAlert(type, message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+        alertDiv.style.zIndex = '9999';
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('currentDate').textContent = new Date().toISOString().split('T')[0];
+        updatePreview();
+
+        // Load saved template if exists
+        fetch('/itams/assets/api/qr-template/default')
+            .then(response => response.json())
+            .then(template => {
+                if (template) {
+                    document.getElementById('labelSize').value = template.labelSize || 'medium';
+                    document.getElementById('colorScheme').value = template.colorScheme || 'default';
+                    document.getElementById('companyName').value = template.companyName || 'YOUR COMPANY';
+                    document.getElementById('footerText').value = template.footerText || 'Asset Management System';
+                    document.getElementById('showLogo').checked = template.showLogo !== false;
+                    document.getElementById('showQrCode').checked = template.showQrCode !== false;
+                    document.getElementById('showAssetName').checked = template.showAssetName !== false;
+                    document.getElementById('showAssetTag').checked = template.showAssetTag !== false;
+                    document.getElementById('showSerialNumber').checked = template.showSerialNumber !== false;
+                    document.getElementById('showCategory').checked = template.showCategory || false;
+                    document.getElementById('showDepartment').checked = template.showDepartment || false;
+                    document.getElementById('showLocation').checked = template.showLocation || false;
+                    document.getElementById('showPurchaseDate').checked = template.showPurchaseDate || false;
+                    document.getElementById('showWarranty').checked = template.showWarranty || false;
+                    document.getElementById('showStatus').checked = template.showStatus || false;
+                    document.getElementById('showAssignedTo').checked = template.showAssignedTo || false;
+                    document.getElementById('showBarcode').checked = template.showBarcode || false;
+                    updatePreview();
+                }
+            })
+            .catch(() => console.log('No saved template found, using defaults'));
+    });
+</script>
+</body>
+</html>

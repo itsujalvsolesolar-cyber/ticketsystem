@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title}">Ticket System</title>
+
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎫</text></svg>">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<!--
+  IMPORTANT: Everything the child page needs MUST be inside this fragment root.
+-->
+<div th:fragment="sidebar">
+
+    <!-- 1. MOBILE MENU BUTTON -->
+    <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="sidebar">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- 2. SIDEBAR OVERLAY -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- 3. ACTUAL SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <a href="/" class="d-flex align-items-center text-decoration-none">
+                <div class="brand-icon"><i class="bi bi-ticket-perforated-fill"></i></div>
+                <span class="brand-text">IT Support</span>
+            </a>
+            <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode" id="themeToggleBtn">
+                <i class="bi bi-moon-stars-fill"></i>
+            </button>
+        </div>
+
+        <div class="sidebar-search d-none d-md-block">
+            <button class="search-trigger">
+                <i class="bi bi-search"></i>
+                <span>Quick search...</span>
+                <kbd>K</kbd>
+            </button>
+        </div>
+
+        <ul class="nav flex-column sidebar-nav">
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${currentUri == '/' ? 'active' : ''}" href="/">
+                    <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/tickets/new') ? 'active' : ''}" href="/tickets/new">
+                    <i class="bi bi-plus-circle-fill"></i><span>Create Ticket</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/shift') ? 'active' : ''}" href="/shift/status">
+                    <i class="bi bi-clock-history"></i><span>My Shift</span>
+                </a>
+            </li>
+            <!-- IT Asset Management Section -->
+            <li class="nav-section-title" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                IT Assets
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/categories') ? 'active' : ''}" href="/itams/categories">
+                    <i class="bi bi-tags"></i>
+                    <span>Categories</span>
+                </a>
+            </li>
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/brands') ? 'active' : ''}" href="/itams/brands">
+                    <i class="bi bi-bookmark"></i>
+                    <span>Brands</span>
+                </a>
+            </li>
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/assets') ? 'active' : ''}" href="/itams/assets">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Assets</span>
+                </a>
+            </li>
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/suppliers') ? 'active' : ''}" href="/itams/suppliers">
+                    <i class="bi bi-truck"></i>
+                    <span>Suppliers</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/employees') ? 'active' : ''}" href="/itams/employees">
+                    <i class="bi bi-people"></i>
+                    <span>Employees</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/products') ? 'active' : ''}" href="/itams/products">
+                    <i class="bi bi-box-seam"></i>
+                    <span>Products</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/warehouses') ? 'active' : ''}" href="/itams/warehouses">
+                    <i class="bi bi-building"></i>
+                    <span>Warehouses</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/stock') ? 'active' : ''}" href="/itams/stock">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <span>Stock Movements</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/software-catalog') ? 'active' : ''}" href="/itams/software-catalog">
+                    <i class="bi bi-collection"></i>
+                    <span>Software Catalog</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/software') ? 'active' : ''}" href="/itams/software">
+                    <i class="bi bi-disc"></i>
+                    <span>Software</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/access') ? 'active' : ''}" href="/itams/access">
+                    <i class="bi bi-shield-lock"></i>
+                    <span>Digital Access</span>
+                </a>
+            </li>
+
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/admin/workflows') ? 'active' : ''}" href="/admin/workflows">
+                    <i class="bi bi-diagram-3-fill"></i>
+                    <span>Workflow Builder</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/api/notifications/history}">
+                    <i class="bi bi-bell me-2"></i> Notification History
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/executive/dashboard}">
+                    <i class="bi bi-speedometer2 me-2"></i> Executive Dashboard
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/itams/executive/dashboard}">
+                    <i class="bi bi-hdd-network me-2"></i> NAS Management
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/audit/viewer}">
+                    <i class="bi bi-shield-check me-2"></i> Audit Logs
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/audit/recycle-bin}">
+                    <i class="bi bi-trash me-2"></i> Recycle Bin
+                </a>
+            </li>
+
+            <!-- System Configuration (SMTP, Company, Security) -->
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/admin/console}"
+                   th:classappend="${#strings.startsWith(currentUri, '/admin/console') ? 'active' : ''}">
+                    <i class="bi bi-gear-wide-connected me-2"></i> System Config
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/iam/dashboard}"
+                   th:classappend="${#strings.startsWith(currentUri, '/iam') ? 'active' : ''}">
+                    <i class="bi bi-shield-lock me-2"></i> Identity & Access (IAM)
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/itams/assets/scanner}">
+                    <i class="bi bi-qr-code-scan me-2"></i> QR Scanner
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/itams/assets/qr-sticker-designer}">
+                    <i class="bi bi-qr-code me-2"></i>QR Sticker Designer
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/itams/assets/qr-template-designer}">
+                    <i class="bi bi-palette me-2"></i>QR Template Designer
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/itams/assets/qr-canvas-designer}">
+                    <i class="bi bi-palette me-2"></i>QR Canvas Designer
+                </a>
+            </li>
+
+            <!-- Administration Section (Visible only to Super Admin or IT Manager) -->
+            <li class="nav-section-title" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER'))}">
+                Administration
+            </li>
+
+            <!-- Master Data & User Management (Users, Departments, Categories, Roles) -->
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER'))}">
+                <a class="nav-link" th:href="@{/admin/settings}"
+                   th:classappend="${#strings.startsWith(currentUri, '/admin/settings') ? 'active' : ''}">
+                    <i class="bi bi-gear-fill me-2"></i>
+                    <span>Users & Roles</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer" th:if="${currentUser != null}">
+            <div class="user-profile">
+                <div class="user-avatar" th:text="${#strings.substring(currentUser.username, 0, 1).toUpperCase()}">U</div>
+                <div class="user-info">
+                    <div class="user-name" th:text="${currentUser.username}">Username</div>
+                    <!-- ✅ FIXED: Extract role names from the Set and join them with a comma -->
+                    <div class="user-role" th:text="${#strings.listJoin(currentUser.roles.![name], ', ')}">Role</div>
+                </div>
+                <form th:action="@{/logout}" method="post" id="logoutForm" class="d-none"></form>
+                <a href="#" onclick="document.getElementById('logoutForm').submit(); return false;" class="logout-btn" aria-label="Logout">
+                    <i class="bi bi-box-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+
+    </nav>
+
+    <!-- ==========================================
+         SCRIPTS - LOAD IN CORRECT ORDER
+         ========================================== -->
+
+    <!-- 1. Bootstrap JS FIRST (Added to fix 'bootstrap is not defined' error) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- 2. Then your custom scripts -->
+    <!-- 4. SCRIPTS FOR SIDEBAR & MOBILE TOGGLE -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const toggleBtn = document.getElementById('mobileMenuToggle');
+            if (!toggleBtn || !sidebar || !overlay) return;
+
+            const icon = toggleBtn.querySelector('i');
+
+            function toggleSidebar() {
+                const isOpen = sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+                document.body.classList.toggle('sidebar-open');
+                toggleBtn.setAttribute('aria-expanded', isOpen);
+                icon.classList.toggle('bi-list', !isOpen);
+                icon.classList.toggle('bi-x-lg', isOpen);
+            }
+
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault(); e.stopPropagation(); toggleSidebar();
+            });
+
+            overlay.addEventListener('click', function() {
+                sidebar.classList.remove('active');
+                overlay.classList.remove('active');
+                document.body.classList.remove('sidebar-open');
+                toggleBtn.setAttribute('aria-expanded', 'false');
+                icon.classList.remove('bi-x-lg'); icon.classList.add('bi-list');
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && sidebar.classList.contains('active')) overlay.click();
+            });
+        });
+
+        function toggleTheme() {
+            const html = document.documentElement;
+            const newTheme = html.getAttribute('data-bs-theme') === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            const icon = document.querySelector('#themeToggleBtn i');
+            if (icon) icon.className = newTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+        }
+
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+            const icon = document.querySelector('#themeToggleBtn i');
+            if (icon) icon.className = savedTheme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+        })();
+    </script>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,60 @@
+@layer components {
+    .form-control,
+    .form-select {
+        background-color: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        color: var(--text-primary);
+        padding: var(--space-3) var(--space-4);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        font-size: 0.9375rem;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        background-color: var(--bg-surface);
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 3px var(--info-bg);
+        color: var(--text-primary);
+        outline: none;
+    }
+
+    .form-control::placeholder {
+        color: var(--text-secondary);
+        opacity: 0.7;
+    }
+
+    .input-group-text {
+        border-color: var(--border-color);
+        color: var(--text-secondary);
+        background: transparent;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        margin-bottom: var(--space-2);
+        color: var(--text-primary);
+    }
+
+    .form-text {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: var(--space-1);
+    }
+
+    .invalid-feedback {
+        display: block;
+        color: var(--danger);
+        font-size: 0.875rem;
+        margin-top: var(--space-1);
+    }
+
+    .is-invalid {
+        border-color: var(--danger) !important;
+    }
+
+    .is-invalid:focus {
+        box-shadow: 0 0 0 3px var(--danger-bg) !important;
+    }
+}

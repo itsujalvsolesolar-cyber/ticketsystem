@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <h1 class="h3 fw-bold" th:text="${pageTitle}">Allocate Asset</h1>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/itams/allocations}" method="post">
+                <input type="hidden" name="assetId" th:value="${asset.id}">
+
+                <div class="row g-3">
+                    <!-- Asset Info -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Asset</label>
+                        <p class="form-control-static" th:text="${asset.name} + ' (' + ${asset.assetTag} + ')'"></p>
+                    </div>
+
+                    <!-- Employee Selection -->
+                    <div class="col-md-6">
+                        <label for="employeeId" class="form-label fw-semibold">Assign To Employee <span class="text-danger">*</span></label>
+                        <select class="form-select" id="employeeId" name="employeeId" required>
+                            <option value="">Select Employee</option>
+                            <option th:each="emp : ${employees}"
+                                    th:value="${emp.id}"
+                                    th:text="${emp.fullName} + (${emp.department != null} ? ' - ' + ${emp.department} : '')">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Condition -->
+                    <div class="col-md-6">
+                        <label for="condition" class="form-label fw-semibold">Condition at Issue <span class="text-danger">*</span></label>
+                        <select class="form-select" id="condition" name="condition" required>
+                            <option th:each="c : ${conditions}" th:value="${c}" th:text="${c.displayName}"></option>
+                        </select>
+                    </div>
+
+                    <!-- Expected Return -->
+                    <div class="col-md-6">
+                        <label for="expectedReturn" class="form-label fw-semibold">Expected Return Date</label>
+                        <input type="date" class="form-control" id="expectedReturn" name="expectedReturn">
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="col-12">
+                        <label for="notes" class="form-label fw-semibold">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="e.g., Issued with charger and mouse"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Confirm Allocation
+                    </button>
+                    <a th:href="@{/itams/assets/{id}(id=${asset.id})}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

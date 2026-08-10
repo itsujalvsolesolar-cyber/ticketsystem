@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/itams/software">Software Licenses</a></li>
+                <li class="breadcrumb-item active">Assign License</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold">Assign Software License</h1>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/itams/software}" method="post">
+                <!-- CSRF Token -->
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="employeeId" class="form-label fw-semibold">
+                            Employee <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="employeeId" name="employeeId" required>
+                            <option value="">Select Employee</option>
+                            <option th:each="emp : ${employees}" 
+                                    th:value="${emp.id}" 
+                                    th:text="${emp.fullName} + (${emp.department != null} ? ' - ' + ${emp.department} : '')">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Find this section in form.html and replace it -->
+                    <div class="col-md-6">
+                        <label for="catalogId" class="form-label fw-semibold">
+                            Software <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="catalogId" name="catalogId" required>
+                            <option value="">Select Software from Catalog</option>
+                            <option th:each="cat : ${catalogs}" 
+                                    th:value="${cat.id}" 
+                                    th:text="${cat.name} + (${cat.vendor != null} ? ' (' + ${cat.vendor} + ')' : '')">
+                            </option>
+                        </select>
+                        <div class="form-text">Don't see the software? Add it to the <a href="/itams/software-catalog">Software Catalog</a> first.</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="licenseKey" class="form-label fw-semibold">License Key / Serial</label>
+                        <input type="text" class="form-control font-monospace" id="licenseKey" name="licenseKey" 
+                               placeholder="XXXX-XXXX-XXXX-XXXX">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="expiryDate" class="form-label fw-semibold">Expiry Date</label>
+                        <input type="date" class="form-control" id="expiryDate" name="expiryDate">
+                        <div class="form-text">Leave blank for lifetime/perpetual licenses</div>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="remarks" class="form-label fw-semibold">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3" 
+                                  placeholder="e.g., Assigned for new project, includes Visio and Project"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Assign License
+                    </button>
+                    <a href="/itams/software" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

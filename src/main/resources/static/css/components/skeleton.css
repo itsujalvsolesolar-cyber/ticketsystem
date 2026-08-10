@@ -1,0 +1,44 @@
+@layer components {
+    .skeleton {
+        background: linear-gradient(90deg, var(--bg-sidebar-hover) 25%, var(--border-color) 50%, var(--bg-sidebar-hover) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+        border-radius: var(--radius-md);
+    }
+
+    @keyframes skeleton-loading {
+        0% {
+            background-position: 200% 0;
+        }
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    .skeleton-text {
+        height: 1rem;
+        margin-bottom: var(--space-2);
+    }
+
+    .skeleton-title {
+        height: 1.5rem;
+        width: 60%;
+        margin-bottom: var(--space-4);
+    }
+
+    .skeleton-card {
+        height: 200px;
+        margin-bottom: var(--space-4);
+    }
+
+    .skeleton-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-full);
+    }
+
+    .skeleton-button {
+        height: 40px;
+        width: 120px;
+    }
+}

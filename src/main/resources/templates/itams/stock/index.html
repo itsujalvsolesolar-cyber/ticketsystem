@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Stock Movements</h1>
+                <p class="text-secondary mb-0">Audit trail of all inventory changes</p>
+            </div>
+            <a href="/itams/stock/new" class="btn btn-primary">
+                <i class="bi bi-arrow-left-right me-2"></i>Record New Movement
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th class="ps-4">Date</th>
+                        <th>Type</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Reference</th>
+                        <th>Performed By</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="t : ${transactions}">
+                        <td class="ps-4 small text-secondary" th:text="${#temporals.format(t.transactionDate, 'dd MMM yyyy HH:mm')}"></td>
+                        <td>
+                            <span th:if="${t.type.name() == 'STOCK_IN'}" class="badge bg-success-subtle text-success-emphasis">Stock In</span>
+                            <span th:if="${t.type.name() == 'STOCK_OUT'}" class="badge bg-danger-subtle text-danger-emphasis">Stock Out</span>
+                            <span th:if="${t.type.name() == 'TRANSFER'}" class="badge bg-primary-subtle text-primary-emphasis">Transfer</span>
+                            <span th:if="${t.type.name() == 'ADJUSTMENT'}" class="badge bg-warning-subtle text-warning-emphasis">Adjustment</span>
+                            <span th:if="${t.type.name() == 'DAMAGED' or t.type.name() == 'SCRAP'}" class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${t.type.displayName}"></span>
+                        </td>
+                        <td class="fw-semibold" th:text="${t.product.name}"></td>
+                        <td>
+                            <span th:if="${t.type.name() == 'STOCK_IN'}" class="text-success fw-bold" th:text="'+' + ${t.quantity}"></span>
+                            <span th:unless="${t.type.name() == 'STOCK_IN'}" class="text-danger fw-bold" th:text="'-' + ${t.quantity}"></span>
+                        </td>
+                        <td th:text="${t.fromWarehouse != null ? t.fromWarehouse.name : '-'}"></td>
+                        <td th:text="${t.toWarehouse != null ? t.toWarehouse.name : '-'}"></td>
+                        <td class="small" th:text="${t.referenceNumber ?: '-'}"></td>
+                        <td class="small" th:text="${t.performedBy != null ? t.performedBy.username : 'System'}"></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(transactions)}">
+                        <td colspan="8" class="text-center py-4 text-secondary">
+                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                            No stock movements recorded yet.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

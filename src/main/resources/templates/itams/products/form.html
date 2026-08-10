@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/itams/products">Products</a></li>
+                <li class="breadcrumb-item active" th:text="${product.id != null ? 'Edit' : 'New'}"></li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold" th:text="${pageTitle}"></h1>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="${product.id != null ? '/itams/products/' + product.id : '/itams/products'}"
+                  th:object="${product}" method="post">
+
+                <!-- Basic Information -->
+                <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Basic Information</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label fw-semibold">
+                            Product Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" th:field="*{name}"
+                               th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                               placeholder="e.g., Dell Latitude 5540" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="sku" class="form-label fw-semibold">SKU</label>
+                        <input type="text" class="form-control" id="sku" th:field="*{sku}" placeholder="e.g., DL-LAT-5540">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="barcode" class="form-label fw-semibold">Barcode</label>
+                        <input type="text" class="form-control" id="barcode" th:field="*{barcode}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="category" class="form-label fw-semibold">Category</label>
+                        <select class="form-select" id="category" th:field="*{category.id}">
+                            <option value="">Select Category</option>
+                            <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="brand" class="form-label fw-semibold">Brand</label>
+                        <select class="form-select" id="brand" th:field="*{brand.id}">
+                            <option value="">Select Brand</option>
+                            <option th:each="b : ${brands}" th:value="${b.id}" th:text="${b.name}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="supplier" class="form-label fw-semibold">Supplier</label>
+                        <select class="form-select" id="supplier" th:field="*{supplier.id}">
+                            <option value="">Select Supplier</option>
+                            <option th:each="s : ${suppliers}" th:value="${s.id}" th:text="${s.name}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="description" class="form-label fw-semibold">Description</label>
+                        <textarea class="form-control" id="description" th:field="*{description}" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <!-- Stock & Pricing -->
+                <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Stock & Pricing</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label for="currentStock" class="form-label fw-semibold">Current Stock</label>
+                        <input type="number" class="form-control" id="currentStock" th:field="*{currentStock}" min="0">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="minStockLevel" class="form-label fw-semibold">Min Stock Level</label>
+                        <input type="number" class="form-control" id="minStockLevel" th:field="*{minStockLevel}" min="0">
+                        <div class="form-text">Alert when stock falls below this</div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="unitPrice" class="form-label fw-semibold">Unit Price (₹)</label>
+                        <input type="number" class="form-control" id="unitPrice" th:field="*{unitPrice}" step="0.01" min="0">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="unit" class="form-label fw-semibold">Unit of Measure</label>
+                        <select class="form-select" id="unit" th:field="*{unit}">
+                            <option value="Pcs">Pieces (Pcs)</option>
+                            <option value="Box">Box</option>
+                            <option value="Set">Set</option>
+                            <option value="Kg">Kilogram (Kg)</option>
+                            <option value="Ltr">Liter (Ltr)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold d-block">Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="isActive" th:field="*{isActive}">
+                            <label class="form-check-label" for="isActive">Active Product</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <span th:text="${product.id != null ? 'Update' : 'Create'}"></span>
+                    </button>
+                    <a href="/itams/products" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Expiry Alert</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f5f7;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .alert-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .asset-info {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .label {
+            font-weight: 600;
+            color: #495057;
+        }
+        .value {
+            color: #6c757d;
+        }
+        .value.urgent {
+            color: #dc3545;
+            font-weight: 600;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>⚠️ Asset Expiry Alert</h1>
+    </div>
+
+    <div class="content">
+        <div class="alert-box">
+            <strong>Action Required:</strong> An asset requires your immediate attention.
+            The warranty or AMC is expiring soon.
+        </div>
+
+        <div class="asset-info">
+            <div class="info-row">
+                <span class="label">Asset Tag:</span>
+                <span class="value" th:text="${data.assetTag}">TAG-001</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Asset Name:</span>
+                <span class="value" th:text="${data.assetName}">Laptop</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Serial Number:</span>
+                <span class="value" th:text="${data.serialNumber}">SN123456</span>
+            </div>
+            <div class="info-row" th:if="${data.warrantyEndDate}">
+                <span class="label">Warranty End Date:</span>
+                <span class="value urgent" th:text="${data.warrantyEndDate}">2026-08-15</span>
+            </div>
+            <div class="info-row" th:if="${data.amcEndDate}">
+                <span class="label">AMC End Date:</span>
+                <span class="value urgent" th:text="${data.amcEndDate}">2026-08-20</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Days Remaining:</span>
+                <span class="value urgent" th:text="${data.daysRemaining}">15</span>
+            </div>
+        </div>
+
+        <p style="color: #495057; line-height: 1.6;">
+            Please take appropriate action to renew the warranty/AMC or plan for asset replacement
+            before the expiry date to avoid service disruption.
+        </p>
+
+        <a th:href="${data.assetUrl}" class="button" style="color: white;">
+            View Asset Details
+        </a>
+    </div>
+
+    <div class="footer">
+        <p>This is an automated notification from IT Asset Management System.</p>
+        <p>Please do not reply to this email.</p>
+    </div>
+</div>
+</body>
+</html>

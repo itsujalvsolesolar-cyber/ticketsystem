@@ -1,0 +1,111 @@
+@layer components {
+    .timeline {
+        position: relative;
+        padding-left: var(--space-8);
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: var(--space-4);
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--border-color);
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: var(--space-6);
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: calc(-1 * var(--space-8) + var(--space-2));
+        width: var(--space-6);
+        height: var(--space-6);
+        border-radius: var(--radius-full);
+        background: var(--bg-surface);
+        border: 2px solid var(--border-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        z-index: 1;
+    }
+
+    .timeline-item-active .timeline-marker {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+    }
+
+    .timeline-content {
+        padding-left: var(--space-2);
+    }
+
+    .timeline-title {
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: var(--text-primary);
+        margin-bottom: var(--space-1);
+    }
+
+    .timeline-description {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: var(--space-1);
+    }
+
+    .timeline-time {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        font-weight: 500;
+    }
+
+    .activity-log {
+        padding: var(--space-4) 0;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: var(--space-4);
+        padding: var(--space-4) 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-full);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.875rem;
+    }
+
+    .activity-content {
+        flex-grow: 1;
+    }
+
+    .activity-text {
+        font-size: 0.875rem;
+        color: var(--text-primary);
+        margin-bottom: var(--space-1);
+    }
+
+    .activity-time {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+}

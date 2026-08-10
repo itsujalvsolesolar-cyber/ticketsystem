@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('IT Asset Management')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/itams/assets">Assets</a></li>
+                <li class="breadcrumb-item active" th:text="${asset.id != null ? 'Edit' : 'New'}"></li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold" th:text="${pageTitle}"></h1>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="${asset.id != null ? '/itams/assets/' + asset.id : '/itams/assets'}"
+                  th:object="${asset}" method="post">
+
+                <!-- Basic Information -->
+                <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Basic Information</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label fw-semibold">
+                            Asset Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" th:field="*{name}"
+                               th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                               placeholder="e.g., Dell Latitude 5440" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="serialNumber" class="form-label fw-semibold">Serial Number</label>
+                        <input type="text" class="form-control" id="serialNumber" th:field="*{serialNumber}"
+                               placeholder="Manufacturer serial number">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="categoryId" class="form-label fw-semibold">
+                            Category <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="categoryId" name="categoryId" required>
+                            <option value="">Select Category</option>
+                            <option th:each="cat : ${categories}"
+                                    th:value="${cat.id}"
+                                    th:text="${cat.name}"
+                                    th:selected="${asset.category != null and asset.category.id == cat.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Brand -->
+                    <div class="col-md-4">
+                        <label for="brandId" class="form-label fw-semibold">Brand</label>
+                        <select class="form-select" id="brandId" name="brandId">
+                            <option value="">Select Brand</option>
+                            <option th:each="b : ${brands}"
+                                    th:value="${b.id}"
+                                    th:text="${b.name}"
+                                    th:selected="${asset.brand != null and asset.brand.id == b.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Supplier -->
+                    <div class="col-md-4">
+                        <label for="supplierId" class="form-label fw-semibold">Supplier</label>
+                        <select class="form-select" id="supplierId" name="supplierId">
+                            <option value="">Select Supplier</option>
+                            <option th:each="s : ${suppliers}"
+                                    th:value="${s.id}"
+                                    th:text="${s.name}"
+                                    th:selected="${asset.supplier != null and asset.supplier.id == s.id}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12">
+                        <label for="description" class="form-label fw-semibold">Description</label>
+                        <textarea class="form-control" id="description" th:field="*{description}"
+                                  rows="2" placeholder="Optional description"></textarea>
+                    </div>
+                </div>
+
+                <!-- Purchase Information -->
+                <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Purchase Information</h6>
+                <div class="row g-3 mb-4">
+                    <!-- Purchase Date -->
+                    <div class="col-md-4">
+                        <label for="purchaseDate" class="form-label fw-semibold">Purchase Date</label>
+                        <input type="date" class="form-control" id="purchaseDate"
+                               name="purchaseDate"
+                               th:value="${asset.purchaseDate != null ? #temporals.format(asset.purchaseDate, 'yyyy-MM-dd') : ''}">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="purchasePrice" class="form-label fw-semibold">Purchase Price (₹)</label>
+                        <input type="number" class="form-control" id="purchasePrice" th:field="*{purchasePrice}"
+                               step="0.01" min="0" placeholder="0.00">
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="invoiceNumber" class="form-label fw-semibold">Invoice Number</label>
+                        <input type="text" class="form-control" id="invoiceNumber" th:field="*{invoiceNumber}"
+                               placeholder="INV-2026-001">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="poNumber" class="form-label fw-semibold">PO Number</label>
+                        <input type="text" class="form-control" id="poNumber" th:field="*{poNumber}"
+                               placeholder="PO-2026-001">
+                    </div>
+                </div>
+
+                <!-- Warranty Information -->
+                <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Warranty Information</h6>
+                <div class="row g-3 mb-4">
+                    <!-- Warranty Start Date -->
+                    <div class="col-md-4">
+                        <label for="warrantyStartDate" class="form-label fw-semibold">Warranty Start Date</label>
+                        <input type="date" class="form-control" id="warrantyStartDate"
+                               name="warrantyStartDate"
+                               th:value="${asset.warrantyStartDate != null ? #temporals.format(asset.warrantyStartDate, 'yyyy-MM-dd') : ''}">
+                    </div>
+
+                    <!-- Warranty End Date -->
+                    <div class="col-md-4">
+                        <label for="warrantyEndDate" class="form-label fw-semibold">Warranty End Date</label>
+                        <input type="date" class="form-control" id="warrantyEndDate"
+                               name="warrantyEndDate"
+                               th:value="${asset.warrantyEndDate != null ? #temporals.format(asset.warrantyEndDate, 'yyyy-MM-dd') : ''}">
+                    </div>
+
+                    <!-- AMC End Date -->
+                    <div class="col-md-4">
+                        <label for="amcEndDate" class="form-label fw-semibold">AMC End Date</label>
+                        <input type="date" class="form-control" id="amcEndDate"
+                               name="amcEndDate"
+                               th:value="${asset.amcEndDate != null ? #temporals.format(asset.amcEndDate, 'yyyy-MM-dd') : ''}">
+                    </div>
+                </div>
+
+                <!-- Status & Condition -->
+                <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Status & Condition</h6>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="status" class="form-label fw-semibold">
+                            Status <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="status" th:field="*{status}" required>
+                            <option th:each="s : ${statuses}" th:value="${s}" th:text="${s.displayName}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="condition" class="form-label fw-semibold">
+                            Condition <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" id="condition" th:field="*{condition}" required>
+                            <option th:each="c : ${conditions}" th:value="${c}" th:text="${c.displayName}"></option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="location" class="form-label fw-semibold">Location</label>
+                        <input type="text" class="form-control" id="location" th:field="*{location}"
+                               placeholder="e.g., Floor 2, Room 204">
+                    </div>
+
+                    <div class="col-12">
+                        <label for="notes" class="form-label fw-semibold">Notes</label>
+                        <textarea class="form-control" id="notes" th:field="*{notes}"
+                                  rows="2" placeholder="Internal notes"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <span th:text="${asset.id != null ? 'Update' : 'Create'}"></span>
+                    </button>
+                    <a href="/itams/assets" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>

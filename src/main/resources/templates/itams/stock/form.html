@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/itams/stock">Stock Movements</a></li>
+                <li class="breadcrumb-item active">Record Movement</li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold">Record Stock Movement</h1>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/itams/stock}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div class="row g-3">
+                    <!-- Transaction Type -->
+                    <div class="col-md-6">
+                        <label for="type" class="form-label fw-semibold">Transaction Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="type" name="type" required onchange="updateWarehouseVisibility()">
+                            <option value="">Select Type</option>
+                            <option th:each="t : ${types}" th:value="${t}" th:text="${t.displayName}"></option>
+                        </select>
+                    </div>
+
+                    <!-- Product -->
+                    <div class="col-md-6">
+                        <label for="productId" class="form-label fw-semibold">Product <span class="text-danger">*</span></label>
+                        <select class="form-select" id="productId" name="productId" required>
+                            <option value="">Select Product</option>
+                            <option th:each="p : ${products}" th:value="${p.id}" th:text="${p.name} + ' (Current Stock: ' + ${p.currentStock} + ')'"></option>
+                        </select>
+                    </div>
+
+                    <!-- Quantity -->
+                    <div class="col-md-4">
+                        <label for="quantity" class="form-label fw-semibold">Quantity <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                    </div>
+
+                    <!-- From Warehouse -->
+                    <div class="col-md-4 warehouse-from-group" style="display: none;">
+                        <label for="fromWarehouseId" class="form-label fw-semibold">From Warehouse</label>
+                        <select class="form-select" id="fromWarehouseId" name="fromWarehouseId">
+                            <option value="">Select Warehouse</option>
+                            <option th:each="w : ${warehouses}" th:value="${w.id}" th:text="${w.name}"></option>
+                        </select>
+                    </div>
+
+                    <!-- To Warehouse -->
+                    <div class="col-md-4 warehouse-to-group" style="display: none;">
+                        <label for="toWarehouseId" class="form-label fw-semibold">To Warehouse</label>
+                        <select class="form-select" id="toWarehouseId" name="toWarehouseId">
+                            <option value="">Select Warehouse</option>
+                            <option th:each="w : ${warehouses}" th:value="${w.id}" th:text="${w.name}"></option>
+                        </select>
+                    </div>
+
+                    <!-- Reference Number -->
+                    <div class="col-md-6">
+                        <label for="reference" class="form-label fw-semibold">Reference Number</label>
+                        <input type="text" class="form-control" id="reference" name="reference" placeholder="e.g., PO-2026-001 or Ticket ID">
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="col-12">
+                        <label for="notes" class="form-label fw-semibold">Notes / Reason</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="e.g., Damaged during shipping, or Monthly stock count adjustment"></textarea>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Record Movement
+                    </button>
+                    <a href="/itams/stock" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    function updateWarehouseVisibility() {
+        const type = document.getElementById('type').value;
+        const fromGroup = document.querySelector('.warehouse-from-group');
+        const toGroup = document.querySelector('.warehouse-to-group');
+        const fromSelect = document.getElementById('fromWarehouseId');
+        const toSelect = document.getElementById('toWarehouseId');
+
+        // Reset visibility
+        fromGroup.style.display = 'none';
+        toGroup.style.display = 'none';
+        fromSelect.required = false;
+        toSelect.required = false;
+
+        if (type === 'STOCK_IN') {
+            toGroup.style.display = 'block';
+            toSelect.required = true;
+        } else if (type === 'STOCK_OUT') {
+            fromGroup.style.display = 'block';
+            fromSelect.required = true;
+        } else if (type === 'TRANSFER') {
+            fromGroup.style.display = 'block';
+            toGroup.style.display = 'block';
+            fromSelect.required = true;
+            toSelect.required = true;
+        } else if (type === 'ADJUSTMENT' || type === 'DAMAGED' || type === 'SCRAP') {
+            fromGroup.style.display = 'block'; // Optional but good for tracking location
+        }
+    }
+</script>
+</body>
+</html>

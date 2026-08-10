@@ -1,0 +1,235 @@
+@layer pages {
+    .success-container {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: var(--space-12) var(--space-4);
+        text-align: center;
+    }
+
+    .success-icon-wrapper {
+        position: relative;
+        display: inline-block;
+    }
+
+    .success-icon {
+        width: 100px;
+        height: 100px;
+        border-radius: var(--radius-full);
+        background: linear-gradient(135deg, var(--success) 0%, #10b981 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: white;
+        position: relative;
+        z-index: 2;
+        animation: scaleIn 0.5s var(--transition-bounce);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .success-icon-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 120px;
+        height: 120px;
+        border-radius: var(--radius-full);
+        border: 3px solid var(--success-bg);
+        animation: ringPulse 2s ease-out infinite;
+        z-index: 1;
+    }
+
+    @keyframes scaleIn {
+        0% {
+            transform: scale(0);
+            opacity: 0;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    @keyframes ringPulse {
+        0% {
+            transform: translate(-50%, -50%) scale(0.8);
+            opacity: 1;
+        }
+        100% {
+            transform: translate(-50%, -50%) scale(1.5);
+            opacity: 0;
+        }
+    }
+
+    .ticket-reference-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+        text-align: left;
+        box-shadow: var(--shadow-md);
+        margin-bottom: var(--space-6);
+    }
+
+    .ticket-reference-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--space-4);
+        padding-bottom: var(--space-4);
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .ticket-id-display {
+        margin-bottom: var(--space-6);
+    }
+
+    .ticket-id-label {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: var(--space-2);
+    }
+
+    .ticket-id-value {
+        display: flex;
+        align-items: center;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: var(--font-mono);
+    }
+
+    .ticket-metadata {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: var(--space-4);
+    }
+
+    .metadata-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .metadata-label {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+    }
+
+    .metadata-value {
+        font-size: 0.875rem;
+        color: var(--text-primary);
+    }
+
+    .timeline-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        padding: var(--space-6);
+        text-align: left;
+        box-shadow: var(--shadow-md);
+        margin-bottom: var(--space-6);
+    }
+
+    .response-time-card {
+        background: var(--info-bg);
+        border: 1px solid var(--info);
+        border-radius: var(--radius-lg);
+        padding: var(--space-5);
+        margin-bottom: var(--space-6);
+    }
+
+    .response-time-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: var(--radius-lg);
+        background: var(--info-bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: var(--info);
+    }
+
+    .quick-actions {
+        margin-top: var(--space-8);
+    }
+
+    .keyboard-shortcuts {
+        margin-top: var(--space-6);
+        padding-top: var(--space-6);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .shortcut-item {
+        display: flex;
+        align-items: center;
+        gap: var(--space-2);
+    }
+
+    .auto-redirect-notice {
+        text-align: center;
+        margin-top: var(--space-8);
+    }
+
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: var(--success);
+        pointer-events: none;
+        z-index: 9999;
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes slide-up {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in {
+        animation: fade-in 0.5s ease-out 0.2s both;
+    }
+
+    .animate-fade-in-delay {
+        animation: fade-in 0.5s ease-out 0.4s both;
+    }
+
+    .animate-fade-in-delay-2 {
+        animation: fade-in 0.5s ease-out 0.8s both;
+    }
+
+    .animate-fade-in-delay-3 {
+        animation: fade-in 0.5s ease-out 1s both;
+    }
+
+    .animate-slide-up {
+        animation: slide-up 0.5s ease-out 0.6s both;
+    }
+
+    .animate-slide-up-delay {
+        animation: slide-up 0.5s ease-out 0.8s both;
+    }
+
+    .animate-slide-up-delay-2 {
+        animation: slide-up 0.5s ease-out 1s both;
+    }
+}

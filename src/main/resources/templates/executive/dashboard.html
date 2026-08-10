@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Executive Dashboard</h1>
+            <p class="text-secondary mb-0">Real-time operational insights and KPIs</p>
+        </div>
+        <div class="btn-group">
+            <a href="/api/reports/assets?format=EXCEL" class="btn btn-outline-success btn-sm"><i class="bi bi-file-earmark-excel me-1"></i> Excel</a>
+            <a href="/api/reports/assets?format=PDF" class="btn btn-outline-danger btn-sm"><i class="bi bi-file-earmark-pdf me-1"></i> PDF</a>
+            <a href="/api/reports/assets?format=CSV" class="btn btn-outline-secondary btn-sm"><i class="bi bi-file-earmark-text me-1"></i> CSV</a>
+        </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row g-3 mb-4" id="kpi-container">
+        <!-- Populated by JS -->
+        <div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">Asset Category Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">Ticket Status Overview</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ticketChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        loadKpis();
+        loadCharts();
+    });
+
+    function loadKpis() {
+        fetch('/executive/api/kpis')
+            .then(res => res.json())
+            .then(data => {
+                const kpis = [
+                    { title: 'Total Assets', value: data.totalAssets, icon: 'bi-box-seam', color: 'primary' },
+                    { title: 'Available Assets', value: data.availableAssets, icon: 'bi-check-circle', color: 'success' },
+                    { title: 'Open Tickets', value: data.openTickets, icon: 'bi-ticket-detailed', color: 'warning' },
+                    { title: 'Pending Approvals', value: data.pendingApprovals, icon: 'bi-hourglass-split', color: 'danger' }
+                ];
+
+                const container = document.getElementById('kpi-container');
+                container.innerHTML = kpis.map(k => `
+                    <div class="col-xl-3 col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="analytics-icon bg-${k.color}-subtle text-${k.color} me-3 rounded-3 p-3">
+                                    <i class="bi ${k.icon} fs-3"></i>
+                                </div>
+                                <div>
+                                    <h2 class="fw-bold mb-1" style="font-size: 1.8rem;">${k.value}</h2>
+                                    <p class="text-secondary small mb-0">${k.title}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            });
+    }
+
+    function loadCharts() {
+        fetch('/executive/api/charts/assets')
+            .then(res => res.json())
+            .then(data => {
+                // Category Pie Chart
+                new Chart(document.getElementById('categoryChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.data,
+                            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#d63384']
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+                });
+
+                // Ticket Bar Chart (Using dummy data for now)
+                new Chart(document.getElementById('ticketChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: ['Open', 'In Progress', 'Resolved', 'Closed'],
+                        datasets: [{
+                            label: 'Tickets',
+                            data: [12, 19, 3, 5], // TODO: Replace with real API data
+                            backgroundColor: '#dc3545'
+                        }]
+                    },
+                    options: { responsive: true, plugins: { legend: { display: false } } }
+                });
+            });
+    }
+</script>
+</body>
+</html>

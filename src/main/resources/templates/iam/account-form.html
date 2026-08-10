@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <a th:href="@{/iam/dashboard}" class="btn btn-sm btn-outline-secondary mb-3">
+            <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+        </a>
+        <h1 class="h3 fw-bold mb-1">Provision New Email Account</h1>
+        <p class="text-secondary mb-0">Create a new enterprise email account for an employee</p>
+    </div>
+
+    <!-- Success/Error Alerts -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="@{/iam/accounts/create}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div class="row g-3">
+                    <!-- Employee Selection -->
+                    <div class="col-md-6">
+                        <label for="userId" class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
+                        <select class="form-select" id="userId" name="userId" required>
+                            <option value="">Select Employee</option>
+                            <option th:each="user : ${users}"
+                                    th:value="${user.id}"
+                                    th:text="${user.fullName + ' (' + user.username + ')'}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="col-md-6">
+                        <label for="emailAddress" class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" class="form-control" id="emailAddress" name="emailAddress"
+                               placeholder="john.doe@company.com" required>
+                    </div>
+
+                    <!-- Email Provider -->
+                    <div class="col-md-6">
+                        <label for="provider" class="form-label fw-semibold">Email Provider <span class="text-danger">*</span></label>
+                        <select class="form-select" id="provider" name="provider" required>
+                            <option value="">Select Provider</option>
+                            <option th:each="provider : ${providers}"
+                                    th:value="${provider}"
+                                    th:text="${provider}">
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- Software License -->
+                    <div class="col-md-6">
+                        <label for="licenseId" class="form-label fw-semibold">Software License</label>
+                        <select class="form-select" id="licenseId" name="licenseId">
+                            <option value="">No License</option>
+                            <!-- ✅ Safe fallback using license.id to prevent Thymeleaf errors -->
+                            <option th:each="license : ${licenses}"
+                                    th:value="${license.id}"
+                                    th:text="'License ID: ' + ${license.id}">
+                            </option>
+                        </select>
+                        <div class="form-text">Optional: Assign a software license to this account</div>
+                    </div>
+
+                    <!-- Recovery Email -->
+                    <div class="col-md-6">
+                        <label for="recoveryEmail" class="form-label fw-semibold">Recovery Email</label>
+                        <input type="email" class="form-control" id="recoveryEmail" name="recoveryEmail"
+                               placeholder="personal.email@example.com">
+                    </div>
+
+                    <!-- Recovery Phone -->
+                    <div class="col-md-6">
+                        <label for="recoveryPhone" class="form-label fw-semibold">Recovery Phone</label>
+                        <input type="tel" class="form-control" id="recoveryPhone" name="recoveryPhone"
+                               placeholder="+1 (555) 123-4567">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <a th:href="@{/iam/dashboard}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Provision Email Account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

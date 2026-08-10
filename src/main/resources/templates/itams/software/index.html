@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Software Licenses</h1>
+                <p class="text-secondary mb-0">Track and manage software assignments</p>
+            </div>
+            <a href="/itams/software/new" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Assign License
+            </a>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th class="ps-4">Software Name</th>
+                        <th>Assigned To</th>
+                        <th>License Key</th>
+                        <th>Expiry Date</th>
+                        <th>Assigned Date</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="license : ${licenses}">
+                        <td class="ps-4 fw-semibold">
+                            <span th:if="${license.softwareCatalog != null}" th:text="${license.softwareCatalog.name}"></span>
+                            <span th:unless="${license.softwareCatalog != null}" class="text-muted fst-italic">Legacy / Unknown</span>
+                        </td>
+                        
+                        <td th:text="${license.employee.fullName}"></td>
+                        <td>
+                            <span class="badge bg-light text-dark border font-monospace" 
+                                  th:text="${license.licenseKey != null ? license.licenseKey : '-'}"></span>
+                        </td>
+                        <td>
+                            <span th:if="${license.expiryDate != null and license.expiryDate.isBefore(T(java.time.LocalDate).now())}" 
+                                  class="badge bg-danger-subtle text-danger-emphasis">
+                                Expired
+                            </span>
+                            <span th:unless="${license.expiryDate != null and license.expiryDate.isBefore(T(java.time.LocalDate).now())}" 
+                                  th:text="${license.expiryDate != null ? #temporals.format(license.expiryDate, 'dd MMM yyyy') : 'Lifetime'}">
+                            </span>
+                        </td>
+                        <td class="small text-secondary" th:text="${#temporals.format(license.assignedDate, 'dd MMM yyyy')}"></td>
+                        <td class="text-end pe-4">
+                            <form th:action="@{/itams/software/{id}/revoke(id=${license.id})}" 
+                                  method="post" class="d-inline"
+                                  onsubmit="return confirm('Revoke this software license?')">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                    <i class="bi bi-x-circle me-1"></i>Revoke
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(licenses)}">
+                        <td colspan="6" class="text-center py-4 text-secondary">
+                            <i class="bi bi-inbox fs-4 d-block mb-2"></i>
+                            No software licenses assigned yet.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

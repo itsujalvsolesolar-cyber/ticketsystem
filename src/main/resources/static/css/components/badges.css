@@ -1,0 +1,97 @@
+@layer components {
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-1) var(--space-3);
+        border-radius: var(--radius-md);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        transition: all var(--transition-base);
+    }
+
+    .status-open {
+        background: var(--danger-bg);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+    }
+
+    .status-resolved {
+        background: var(--success-bg);
+        color: var(--success);
+        border: 1px solid var(--success);
+    }
+
+    .status-closed {
+        background: var(--bg-sidebar-hover);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-color);
+    }
+
+    .status-progress {
+        background: var(--info-bg);
+        color: var(--info);
+        border: 1px solid var(--info);
+    }
+
+    .priority-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-1) var(--space-3);
+        border-radius: var(--radius-md);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .priority-high {
+        background: var(--danger-bg);
+        color: var(--danger);
+    }
+
+    .priority-medium {
+        background: var(--warning-bg);
+        color: var(--warning);
+    }
+
+    .priority-low {
+        background: var(--success-bg);
+        color: var(--success);
+    }
+
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: var(--space-1) var(--space-3);
+        border-radius: var(--radius-md);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .role-admin {
+        background: var(--danger-bg);
+        color: var(--danger);
+    }
+
+    .role-manager {
+        background: var(--info-bg);
+        color: var(--info);
+    }
+
+    .role-agent {
+        background: var(--bg-sidebar-hover);
+        color: var(--text-secondary);
+    }
+
+    .status-completed {
+        background: var(--success-bg);
+        color: var(--success);
+    }
+
+    .status-active {
+        background: var(--warning-bg);
+        color: var(--warning);
+    }
+}

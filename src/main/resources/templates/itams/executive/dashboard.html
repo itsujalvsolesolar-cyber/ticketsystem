@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item active">Executive Dashboard</li>
+            </ol>
+        </nav>
+
+        <div>
+            <h1 class="h3 fw-bold mb-1">Executive Dashboard</h1>
+            <p class="text-secondary mb-0">Request NAS access for employees and track approval status</p>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Request Form -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <h5 class="mb-4">Request NAS Access for Employee</h5>
+            <form th:action="@{/executive/requests}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="employee" class="form-label fw-semibold">Employee <span class="text-danger">*</span></label>
+                        <select class="form-select" id="employee" name="employeeId" required>
+                            <option value="">Select Employee</option>
+                            <option th:each="emp : ${employees}" th:value="${emp.id}" th:text="${emp.username} + ' - ' + emp.fullName">Employee</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="folder" class="form-label fw-semibold">NAS Folder <span class="text-danger">*</span></label>
+                        <select class="form-select" id="folder" name="folderId" required>
+                            <option value="">Select Folder</option>
+                            <option th:each="folder : ${folders}" th:value="${folder.id}" th:text="${folder.folderName}">Folder</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label for="permissionLevel" class="form-label fw-semibold">Permission Level <span class="text-danger">*</span></label>
+                        <select class="form-select" id="permissionLevel" name="permissionLevel" required>
+                            <option value="READ">Read Only</option>
+                            <option value="WRITE">Read & Write</option>
+                            <option value="MODIFY">Modify</option>
+                            <option value="DELETE">Delete</option>
+                            <option value="FULL_CONTROL">Full Control</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Temporary Access</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="isTemporary" name="isTemporary">
+                            <label class="form-check-label" for="isTemporary">Request temporary access</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4" id="temporaryEndDateContainer" style="display: none;">
+                        <label for="temporaryEndDate" class="form-label fw-semibold">End Date</label>
+                        <input type="datetime-local" class="form-control" id="temporaryEndDate" name="temporaryEndDate">
+                    </div>
+
+                    <div class="col-12">
+                        <label for="remarks" class="form-label fw-semibold">Business Justification <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="2" required
+                                  placeholder="Why is this access needed?"></textarea>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <button type="button" class="btn btn-outline-secondary" id="clearForm">
+                        <i class="bi bi-eraser me-2"></i>Clear
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-2"></i>Submit Request
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Employee Access History -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-semibold">Employee Access History</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Employee</th>
+                        <th>Folder</th>
+                        <th>Permission</th>
+                        <th>Requested By</th>
+                        <th>Created</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- This would be populated with all requests -->
+                    <tr th:each="request : ${allRequests}">
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-2" th:text="${#strings.substring(request.employee.username, 0, 1).toUpperCase()}">U</div>
+                                <div>
+                                    <div class="fw-semibold" th:text="${request.employee.fullName ?: request.employee.username}">Name</div>
+                                    <small class="text-muted" th:text="${request.employee.email}">email</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <i class="bi bi-folder me-1 text-primary"></i>
+                            <span th:text="${request.folder.folderName}">Folder</span>
+                        </td>
+                        <td>
+                                <span class="badge bg-primary-subtle text-primary-emphasis"
+                                      th:text="${request.permissionLevel}">READ</span>
+                        </td>
+                        <td th:text="${request.requestedBy.fullName ?: request.requestedBy.username}">Requester</td>
+                        <td th:text="${#temporals.format(request.createdAt, 'dd MMM yyyy HH:mm')}">Date</td>
+                        <td>
+                            <span th:if="${request.status == 'PENDING_IT'}" class="badge bg-warning-subtle text-warning-emphasis">Pending IT</span>
+                            <span th:if="${request.status == 'PENDING_MD'}" class="badge bg-warning-subtle text-warning-emphasis">Pending MD</span>
+                            <span th:if="${request.status == 'APPROVED'}" class="badge bg-success-subtle text-success-emphasis">Approved</span>
+                            <span th:if="${request.status == 'REJECTED'}" class="badge bg-danger-subtle text-danger-emphasis">Rejected</span>
+                            <span th:if="${request.status == 'REVOKED'}" class="badge bg-secondary-subtle text-secondary-emphasis">Revoked</span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal" th:data-target="'#viewRequestModal' + ${request.id}">
+                                <i class="bi bi-eye"></i> View
+                            </button>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- View Request Modal -->
+<th:block th:each="request : ${allRequests}">
+    <div class="modal fade" th:id="'viewRequestModal' + ${request.id}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Access Request Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Employee:</h6>
+                        <p th:text="${request.employee.fullName ?: request.employee.username}">Name</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Folder:</h6>
+                        <p th:text="${request.folder.folderName}">Folder</p>
+                        <p class="text-muted" th:text="${request.folder.networkPath}">Path</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Permission:</h6>
+                        <p th:text="${request.permissionLevel}">READ</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Requested By:</h6>
+                        <p th:text="${request.requestedBy.fullName}">Requester</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Business Justification:</h6>
+                        <p th:text="${request.remarks}">Justification</p>
+                    </div>
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Status:</h6>
+                        <span th:if="${request.status == 'PENDING_IT'}" class="badge bg-warning-subtle text-warning-emphasis">Pending IT</span>
+                        <span th:if="${request.status == 'PENDING_MD'}" class="badge bg-warning-subtle text-warning-emphasis">Pending MD</span>
+                        <span th:if="${request.status == 'APPROVED'}" class="badge bg-success-subtle text-success-emphasis">Approved</span>
+                        <span th:if="${request.status == 'REJECTED'}" class="badge bg-danger-subtle text-danger-emphasis">Rejected</span>
+                        <span th:if="${request.status == 'REVOKED'}" class="badge bg-secondary-subtle text-secondary-emphasis">Revoked</span>
+                    </div>
+                    <div th:if="${request.isTemporary}" class="mb-3">
+                        <h6 class="fw-bold">Temporary Access:</h6>
+                        <p th:text="${#temporals.format(request.temporaryEndDate, 'dd MMM yyyy HH:mm')}">End Date</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Toggle temporary end date field
+    document.getElementById('isTemporary').addEventListener('change', function() {
+        var container = document.getElementById('temporaryEndDateContainer');
+        if (this.checked) {
+            container.style.display = 'block';
+        } else {
+            container.style.display = 'none';
+        }
+    });
+
+    // Clear form button
+    document.getElementById('clearForm').addEventListener('click', function() {
+        document.getElementById('employee').value = '';
+        document.getElementById('folder').value = '';
+        document.getElementById('permissionLevel').value = '';
+        document.getElementById('isTemporary').checked = false;
+        document.getElementById('temporaryEndDate').value = '';
+        document.getElementById('remarks').value = '';
+    });
+</script>
+</body>
+</html>

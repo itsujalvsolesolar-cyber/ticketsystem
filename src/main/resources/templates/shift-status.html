@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My Shift')}"></head>
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+
+    <!-- ==========================================
+         PAGE HEADER
+         ========================================== -->
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb breadcrumb-chevron">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">My Shift</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Shift Management</h1>
+                <p class="text-secondary mb-0">Track your work hours and view shift history.</p>
+            </div>
+            <button class="btn btn-outline-secondary" onclick="exportShiftHistory()" id="exportBtn">
+                <i class="bi bi-download me-2"></i>Export History
+            </button>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         HERO TIMER CARD
+         ========================================== -->
+    <div class="card border-0 shadow-sm mb-4 timer-card"
+         th:classappend="${activeShift != null} ? 'timer-active' : 'timer-inactive'">
+        <div class="card-body p-5 text-center">
+
+            <!-- Clocked In State -->
+            <div th:if="${activeShift != null}" class="timer-content">
+                <div class="timer-status mb-4">
+                    <span class="status-dot status-dot-active"></span>
+                    <span class="status-text text-success fw-bold text-uppercase small ls-1">Currently Clocked In</span>
+                </div>
+
+                <div class="timer-display mb-4" id="liveTimer">
+                    <span class="timer-hours" id="timerHours">00</span>
+                    <span class="timer-separator">:</span>
+                    <span class="timer-minutes" id="timerMinutes">00</span>
+                    <span class="timer-separator">:</span>
+                    <span class="timer-seconds" id="timerSeconds">00</span>
+                </div>
+
+                <p class="text-secondary mb-4">
+                    Started at <strong th:text="${#temporals.format(activeShift.clockInTime, 'HH:mm')}"></strong>
+                    on <span th:text="${#temporals.format(activeShift.clockInTime, 'dd MMM yyyy')}"></span>
+                </p>
+
+                <form th:action="@{/shift/clock-out}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-danger btn-lg btn-timer px-5" id="clockOutBtn">
+                        <i class="bi bi-stop-circle-fill me-2"></i>Clock Out
+                    </button>
+                </form>
+
+                <div class="mt-3">
+                    <small class="text-secondary">
+                        <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>O</kbd> to clock out
+                    </small>
+                </div>
+            </div>
+
+            <!-- Clocked Out State -->
+            <div th:if="${activeShift == null}" class="timer-content">
+                <div class="timer-status mb-4">
+                    <span class="status-dot status-dot-inactive"></span>
+                    <span class="status-text text-secondary fw-bold text-uppercase small ls-1">Currently Clocked Out</span>
+                </div>
+
+                <div class="timer-display mb-4 timer-display-inactive">
+                    <span class="timer-hours">00</span>
+                    <span class="timer-separator">:</span>
+                    <span class="timer-minutes">00</span>
+                    <span class="timer-separator">:</span>
+                    <span class="timer-seconds">00</span>
+                </div>
+
+                <p class="text-secondary mb-4">
+                    Start your shift to begin tracking time
+                </p>
+
+                <form th:action="@{/shift/clock-in}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-success btn-lg btn-timer px-5" id="clockInBtn">
+                        <i class="bi bi-play-circle-fill me-2"></i>Clock In
+                    </button>
+                </form>
+
+                <div class="mt-3">
+                    <small class="text-secondary">
+                        <kbd>⌘</kbd> + <kbd>Shift</kbd> + <kbd>I</kbd> to clock in
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         WEEKLY ANALYTICS
+         ========================================== -->
+    <div class="row g-3 mb-4">
+        <!-- This Week's Hours -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">This Week</span>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size: 2rem;" id="weeklyHours">0h</h2>
+                    <p class="text-secondary small mb-0">Total Hours</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Hours -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-success-subtle text-success">
+                            <i class="bi bi-calendar-day"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Today</span>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size: 2rem;" id="todayHours">0h</h2>
+                    <p class="text-secondary small mb-0">Hours Worked</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Average Shift -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-info-subtle text-info">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill">Average</span>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size: 2rem;" id="avgShift">0h</h2>
+                    <p class="text-secondary small mb-0">Shift Duration</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shifts This Week -->
+        <div class="col-md-6 col-lg-3">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-warning-subtle text-warning">
+                            <i class="bi bi-list-check"></i>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">Count</span>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size: 2rem;" id="shiftCount">0</h2>
+                    <p class="text-secondary small mb-0">Shifts Completed</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         SHIFT HISTORY TABLE
+         ========================================== -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Shift History</h5>
+            <span class="badge bg-secondary-subtle text-secondary-emphasis" th:text="${#lists.size(recentShifts)} + ' shifts'">0 shifts</span>
+        </div>
+        <div class="card-body p-0">
+
+            <!-- Desktop Table View -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-hover align-middle mb-0 shift-table">
+                    <thead>
+                    <tr>
+                        <th class="ps-4 small fw-semibold text-secondary">Date</th>
+                        <th class="small fw-semibold text-secondary">Clock In</th>
+                        <th class="small fw-semibold text-secondary">Clock Out</th>
+                        <th class="small fw-semibold text-secondary">Duration</th>
+                        <th class="small fw-semibold text-secondary">Status</th>
+                        <th class="text-end pe-4 small fw-semibold text-secondary">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="shift : ${recentShifts}" class="shift-row">
+                        <td class="ps-4">
+                            <div class="fw-semibold" th:text="${#temporals.format(shift.clockInTime, 'dd MMM yyyy')}">Date</div>
+                            <small class="text-secondary" th:text="${#temporals.format(shift.clockInTime, 'EEEE')}">Day</small>
+                        </td>
+                        <td>
+                            <span class="fw-semibold" th:text="${#temporals.format(shift.clockInTime, 'HH:mm')}">Time</span>
+                        </td>
+                        <td>
+                                <span th:if="${shift.clockOutTime != null}" class="fw-semibold"
+                                      th:text="${#temporals.format(shift.clockOutTime, 'HH:mm')}">Time</span>
+                            <span th:if="${shift.clockOutTime == null}" class="text-secondary fst-italic">Still active</span>
+                        </td>
+                        <td>
+                            <span class="fw-bold text-primary" th:text="${shift.formattedDuration}">0h 0m</span>
+                        </td>
+                        <td>
+                                <span th:if="${shift.clockOutTime != null}" class="status-badge status-completed">
+                                    <i class="bi bi-check-circle"></i> Completed
+                                </span>
+                            <span th:if="${shift.clockOutTime == null}" class="status-badge status-active">
+                                    <span class="status-dot-small"></span> Active
+                                </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-secondary btn-icon"
+                                    onclick="viewShiftDetails(this)"
+                                    th:data-shift-id="${shift.id}"
+                                    data-bs-toggle="tooltip"
+                                    title="View Details">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+
+                    <!-- Empty State -->
+                    <tr th:if="${#lists.isEmpty(recentShifts)}">
+                        <td colspan="6" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-clock-history fs-1 text-secondary d-block mb-3 opacity-50"></i>
+                                <h5 class="fw-bold mb-2">No shift history</h5>
+                                <p class="text-secondary mb-0">Your completed shifts will appear here.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="d-md-none p-3">
+                <div th:each="shift : ${recentShifts}" class="shift-card mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <div class="fw-semibold" th:text="${#temporals.format(shift.clockInTime, 'dd MMM yyyy')}">Date</div>
+                            <small class="text-secondary" th:text="${#temporals.format(shift.clockInTime, 'EEEE')}">Day</small>
+                        </div>
+                        <span th:if="${shift.clockOutTime != null}" class="status-badge status-completed">
+                            <i class="bi bi-check-circle"></i> Completed
+                        </span>
+                        <span th:if="${shift.clockOutTime == null}" class="status-badge status-active">
+                            <span class="status-dot-small"></span> Active
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                        <div class="small">
+                            <div>
+                                <span class="text-secondary">In:</span>
+                                <span class="fw-semibold" th:text="${#temporals.format(shift.clockInTime, 'HH:mm')}">Time</span>
+                            </div>
+                            <div>
+                                <span class="text-secondary">Out:</span>
+                                <span th:if="${shift.clockOutTime != null}" class="fw-semibold"
+                                      th:text="${#temporals.format(shift.clockOutTime, 'HH:mm')}">Time</span>
+                                <span th:if="${shift.clockOutTime == null}" class="text-secondary fst-italic">Active</span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="fw-bold text-primary" th:text="${shift.formattedDuration}">0h 0m</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Empty State -->
+                <div th:if="${#lists.isEmpty(recentShifts)}" class="text-center py-5">
+                    <i class="bi bi-clock-history fs-1 text-secondary d-block mb-3 opacity-50"></i>
+                    <h5 class="fw-bold mb-2">No shift history</h5>
+                    <p class="text-secondary mb-0">Your completed shifts will appear here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<!-- Hidden data for JavaScript -->
+<script th:inline="javascript">
+    const activeShift = /*[[${activeShift}]]*/ null;
+    const recentShifts = /*[[${recentShifts}]]*/ [];
+</script>
+
+<!-- Scripts -->
+
+<script>
+    // ============================================
+    // LIVE TIMER
+    // ============================================
+    let timerInterval = null;
+
+    function startLiveTimer() {
+        if (!activeShift) return;
+
+        const clockInTime = new Date(activeShift.clockInTime);
+
+        function updateTimer() {
+            const now = new Date();
+            const diff = Math.floor((now - clockInTime) / 1000);
+
+            const hours = Math.floor(diff / 3600);
+            const minutes = Math.floor((diff % 3600) / 60);
+            const seconds = diff % 60;
+
+            document.getElementById('timerHours').textContent = String(hours).padStart(2, '0');
+            document.getElementById('timerMinutes').textContent = String(minutes).padStart(2, '0');
+            document.getElementById('timerSeconds').textContent = String(seconds).padStart(2, '0');
+        }
+
+        updateTimer();
+        timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    // Start timer if clocked in
+    if (activeShift) {
+        startLiveTimer();
+    }
+
+    // ============================================
+    // WEEKLY ANALYTICS
+    // ============================================
+    function calculateAnalytics() {
+        const now = new Date();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - now.getDay()); // Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        let weeklyMinutes = 0;
+        let todayMinutes = 0;
+        let completedShifts = 0;
+        let totalShiftMinutes = 0;
+
+        recentShifts.forEach(shift => {
+            if (!shift.clockOutTime) return; // Skip active shifts
+
+            const clockIn = new Date(shift.clockInTime);
+            const clockOut = new Date(shift.clockOutTime);
+            const duration = (clockOut - clockIn) / 1000 / 60; // minutes
+
+            // Check if shift is this week
+            if (clockIn >= startOfWeek) {
+                weeklyMinutes += duration;
+                completedShifts++;
+                totalShiftMinutes += duration;
+            }
+
+            // Check if shift is today
+            const shiftDate = new Date(clockIn);
+            shiftDate.setHours(0, 0, 0, 0);
+            if (shiftDate.getTime() === today.getTime()) {
+                todayMinutes += duration;
+            }
+        });
+
+        // Update UI
+        document.getElementById('weeklyHours').textContent = formatHours(weeklyMinutes);
+        document.getElementById('todayHours').textContent = formatHours(todayMinutes);
+        document.getElementById('shiftCount').textContent = completedShifts;
+
+        const avgMinutes = completedShifts > 0 ? totalShiftMinutes / completedShifts : 0;
+        document.getElementById('avgShift').textContent = formatHours(avgMinutes);
+    }
+
+    function formatHours(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = Math.round(minutes % 60);
+        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+
+    calculateAnalytics();
+
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.addEventListener('keydown', function(e) {
+        // Cmd/Ctrl + Shift + I to clock in
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'I') {
+            e.preventDefault();
+            if (!activeShift) {
+                document.getElementById('clockInBtn').closest('form').submit();
+            }
+        }
+
+        // Cmd/Ctrl + Shift + O to clock out
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'O') {
+            e.preventDefault();
+            if (activeShift) {
+                document.getElementById('clockOutBtn').closest('form').submit();
+            }
+        }
+    });
+
+    // ============================================
+    // EXPORT SHIFT HISTORY
+    // ============================================
+    function exportShiftHistory() {
+        if (recentShifts.length === 0) {
+            showToast('No Data', 'No shift history to export');
+            return;
+        }
+
+        // Create CSV content
+        let csv = 'Date,Day,Clock In,Clock Out,Duration (hours),Status\n';
+
+        recentShifts.forEach(shift => {
+            const clockIn = new Date(shift.clockInTime);
+            const clockOut = shift.clockOutTime ? new Date(shift.clockOutTime) : null;
+
+            const date = clockIn.toLocaleDateString();
+            const day = clockIn.toLocaleDateString('en-US', { weekday: 'long' });
+            const clockInTime = clockIn.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            const clockOutTime = clockOut ? clockOut.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : 'Active';
+
+            let duration = 0;
+            if (clockOut) {
+                duration = ((clockOut - clockIn) / 1000 / 3600).toFixed(2);
+            }
+
+            const status = clockOut ? 'Completed' : 'Active';
+
+            csv += `${date},${day},${clockInTime},${clockOutTime},${duration},${status}\n`;
+        });
+
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `shift-history-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        showToast('Success', 'Shift history exported successfully');
+    }
+
+    // ============================================
+    // VIEW SHIFT DETAILS (Placeholder)
+    // ============================================
+    function viewShiftDetails(btn) {
+        const shiftId = btn.getAttribute('data-shift-id');
+        showToast('Info', `Shift #${shiftId} details coming soon`);
+    }
+
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    function showToast(title, message) {
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-info alert-dismissible fade show position-fixed top-0 end-0 m-3 shadow-lg';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <strong>${title}</strong><br>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ============================================
+    // TOOLTIPS
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (el) {
+            return new bootstrap.Tooltip(el);
+        });
+    });
+</script>
+
+</body>
+</html>

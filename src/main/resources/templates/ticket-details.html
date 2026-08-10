@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Ticket #' + ${ticket.id})}"></head>
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_parameterName" th:content="${_csrf.parameterName}" />
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+
+    <!-- ==========================================
+         HEADER: Breadcrumbs & Quick Actions
+         ========================================== -->
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb breadcrumb-chevron">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    Ticket #<span th:text="${ticket.id}"></span>
+                </li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <!-- Status Badge with Dropdown -->
+                <div class="dropdown">
+                    <button class="status-badge dropdown-toggle border-0"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                            th:classappend="${ticket.status.name() == 'OPEN'} ? 'status-open' :
+                                            (${ticket.status.name() == 'RESOLVED'} ? 'status-resolved' :
+                                            (${ticket.status.name() == 'CLOSED'} ? 'status-closed' : 'status-progress'))">
+                        <span th:text="${ticket.status.displayName}">Open</span>
+                        <i class="bi bi-chevron-down ms-1 small"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-sm">
+                        <li th:if="${ticket.status.name() != 'RESOLVED' and ticket.status.name() != 'CLOSED'}">
+                            <form th:action="@{/tickets/{id}/resolve(id=${ticket.id})}"
+                                  method="post"
+                                  class="d-inline w-100">
+
+                                <input type="hidden"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}" />
+
+                                <button type="submit"
+                                        class="dropdown-item text-start border-0 bg-transparent">
+                                    <i class="bi bi-check-circle me-2 text-success"></i>Resolve
+                                </button>
+                            </form>
+                        </li>
+                        <li><a class="dropdown-item" href="#" onclick="closeTicket()">
+                            <i class="bi bi-x-circle me-2 text-secondary"></i>Close
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="#" onclick="reopenTicket()">
+                            <i class="bi bi-arrow-counterclockwise me-2 text-primary"></i>Reopen
+                        </a></li>
+                    </ul>
+                </div>
+                <h1 class="h3 fw-bold mb-0" th:text="${ticket.title}">Ticket Title</h1>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="d-flex gap-2">
+                <!-- ✅ FIXED: Use safe navigation operator ?. -->
+                <button class="btn btn-outline-primary btn-sm"
+                        th:if="${currentUser != null and (ticket.assignedTo == null or ticket.assignedTo?.id != currentUser?.id)}"
+                        onclick="assignToMe()"
+                        title="Assign this ticket to yourself">
+                    <i class="bi bi-person-check me-1"></i>Assign to Me
+                </button>
+
+                <!-- Watch/Unwatch -->
+                <button class="btn btn-outline-secondary btn-sm" id="watchBtn" onclick="toggleWatch()">
+                    <i class="bi bi-eye me-1"></i><span id="watchText">Watch</span>
+                </button>
+
+                <!-- Start/Complete Work -->
+                <form th:if="${ticket.startedAt == null}" th:action="@{/tickets/{id}/start-work(id=${ticket.id})}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-play-circle me-1"></i>Start Work
+                    </button>
+                </form>
+                <form th:if="${ticket.startedAt != null and ticket.completedAt == null}" th:action="@{/tickets/{id}/complete-work(id=${ticket.id})}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-stop-circle me-1"></i>Complete
+                    </button>
+                </form>
+
+                <!-- More Actions -->
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="bi bi-three-dots"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#" onclick="duplicateTicket()">
+                            <i class="bi bi-copy me-2"></i>Duplicate
+                        </a></li>
+                        <li><a class="dropdown-item" href="#" onclick="exportTicket()">
+                            <i class="bi bi-download me-2"></i>Export
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li th:if="${ticket.status.name() != 'ARCHIVED'}">
+                            <form th:action="@{/tickets/{id}/archive(id=${ticket.id})}"
+                                  method="post"
+                                  class="d-inline w-100"
+                                  onsubmit="return confirm('Archive this ticket? It will be removed from the active list.');">
+
+                                <input type="hidden"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}" />
+
+                                <button type="submit"
+                                        class="dropdown-item text-start border-0 bg-transparent text-warning">
+                                    <i class="bi bi-archive me-2"></i>Archive
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         MAIN GRID: Content (Left) & Properties (Right)
+         ========================================== -->
+    <div class="row g-4">
+
+        <!-- LEFT COLUMN: Description & Activity -->
+        <div class="col-lg-8">
+
+            <!-- Description Card -->
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-0">Description</h6>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="editDescription()">
+                            <i class="bi bi-pencil me-1"></i>Edit
+                        </button>
+                    </div>
+
+                    <!-- Intercom Alert -->
+                    <div th:if="${ticket.intercomNumber != null and !ticket.intercomNumber.isEmpty()}"
+                         class="alert alert-warning d-flex align-items-center mb-3 border-0" role="alert">
+                        <i class="bi bi-telephone-fill me-2 text-warning"></i>
+                        <div>
+                            <strong>Intercom:</strong> <span class="fs-5 fw-bold" th:text="${ticket.intercomNumber}"></span>
+                        </div>
+                    </div>
+
+                    <!-- Description Content -->
+                    <div th:if="${ticket.description != null and !ticket.description.isEmpty()}"
+                         class="ticket-description fs-6" style="white-space: pre-wrap;"
+                         th:text="${ticket.description}">
+                        Description text...
+                    </div>
+                    <div th:if="${ticket.description == null or ticket.description.isEmpty()}"
+                         class="text-secondary fst-italic empty-state-inline">
+                        <i class="bi bi-file-text me-2"></i>No description provided. Click "Edit" to add one.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attachments Card -->
+            <div class="card mb-4 border-0 shadow-sm" th:if="${ticket.attachments != null and !ticket.attachments.isEmpty()}">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-0">
+                            <i class="bi bi-paperclip me-2"></i>Attachments
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2" th:text="${ticket.attachments.size()}">0</span>
+                        </h6>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="downloadAll()">
+                            <i class="bi bi-download me-1"></i>Download All
+                        </button>
+                    </div>
+
+                    <div class="attachments-grid">
+                        <div th:each="att : ${ticket.attachments}" class="attachment-item">
+                            <div class="attachment-preview" th:if="${att.contentType != null and #strings.contains(att.contentType, 'image')}">
+                                <img th:src="@{/tickets/{ticketId}/attachments/{attachmentId}(ticketId=${ticket.id}, attachmentId=${att.id})}"
+                                     th:alt="${att.filename}" class="attachment-thumbnail">
+                            </div>
+                            <div class="attachment-preview attachment-file" th:unless="${att.contentType != null and #strings.contains(att.contentType, 'image')}">
+                                <i class="bi" th:classappend="${getFileIcon(att.filename)}"></i>
+                            </div>
+                            <div class="attachment-info">
+                                <a th:href="@{/tickets/{ticketId}/attachments/{attachmentId}(ticketId=${ticket.id}, attachmentId=${att.id})}"
+                                   class="attachment-name text-truncate" th:text="${att.filename}" th:title="${att.filename}">file.pdf</a>
+                                <span class="attachment-size" th:text="${att.formattedSize}">0 KB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Tabs -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <ul class="nav nav-tabs border-0" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="comments-tab" data-bs-toggle="tab"
+                                    data-bs-target="#comments" type="button" role="tab">
+                                <i class="bi bi-chat-dots me-2"></i>Comments
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2" th:text="${ticket.comments != null ? ticket.comments.size() : 0}">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="activity-tab" data-bs-toggle="tab"
+                                    data-bs-target="#activity" type="button" role="tab">
+                                <i class="bi bi-clock-history me-2"></i>Activity
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <div class="tab-content">
+
+                        <!-- Comments Tab -->
+                        <div class="tab-pane fade show active" id="comments" role="tabpanel">
+
+                            <!-- Empty State -->
+                            <div th:if="${ticket.comments == null or ticket.comments.isEmpty()}" class="text-center py-5 text-secondary">
+                                <i class="bi bi-chat-square-text fs-1 d-block mb-2 opacity-50"></i>
+                                <p class="mb-0">No comments yet. Start the conversation below.</p>
+                            </div>
+
+                            <!-- Comments Timeline -->
+                            <div class="comment-timeline">
+                                <div th:each="comment : ${ticket.comments}" class="comment-item mb-4"
+                                     th:classappend="${comment.internal} ? 'comment-internal' : 'comment-public'">
+
+                                    <div class="d-flex gap-3">
+                                        <!-- Avatar -->
+                                        <div class="comment-avatar flex-shrink-0"
+                                             th:classappend="${comment.internal} ? 'bg-warning bg-opacity-25 text-warning' : 'bg-primary bg-opacity-10 text-primary'">
+                                            <span th:text="${comment.authorName != null ? #strings.substring(comment.authorName, 0, 1).toUpperCase() : 'U'}">A</span>
+                                        </div>
+
+                                        <!-- Content -->
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <strong class="small" th:text="${comment.authorName}">Author</strong>
+                                                    <span th:if="${comment.internal}" class="badge bg-warning text-dark border border-warning-subtle" style="font-size: 0.65rem;">
+                                                        <i class="bi bi-lock-fill me-1"></i>Internal
+                                                    </span>
+                                                    <small class="text-secondary" th:text="${#temporals.format(comment.createdAt, 'dd MMM yyyy, HH:mm')}">Time</small>
+                                                </div>
+                                                <!-- Comment Actions -->
+                                                <div class="comment-actions">
+                                                    <button class="btn btn-sm btn-link text-secondary p-0 me-2" onclick="addReaction(this)" title="React">
+                                                        <i class="bi bi-emoji-smile"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-link text-secondary p-0" onclick="replyToComment(this)" title="Reply">
+                                                        <i class="bi bi-reply"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="comment-content p-3 rounded-3"
+                                                 th:classappend="${comment.internal} ? 'bg-warning bg-opacity-10 border border-warning-subtle' : 'bg-light border'"
+                                                 th:text="${comment.message}">
+                                                Comment message...
+                                            </div>
+                                            <!-- Reactions -->
+                                            <div class="comment-reactions mt-2">
+                                                <!-- Reactions will be added dynamically -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Reply Form -->
+                            <div class="mt-4 pt-4 border-top">
+                                <form th:action="@{/tickets/{id}/comments(id=${ticket.id})}" th:object="${newComment}" method="post">
+                                    <div class="d-flex gap-3">
+                                        <div class="comment-avatar bg-secondary bg-opacity-10 text-secondary flex-shrink-0">
+                                            <i class="bi bi-person-fill"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="mb-2">
+                                                <input type="text" class="form-control form-control-sm border-0 bg-light"
+                                                       th:field="*{authorName}" placeholder="Your name..." required>
+                                            </div>
+                                            <div class="input-group">
+                                                <textarea class="form-control border-0 bg-light" rows="2"
+                                                          th:field="*{message}" placeholder="Leave a comment... (Use @ to mention someone)" required></textarea>
+                                                <button class="btn btn-primary px-4" type="submit">
+                                                    <i class="bi bi-send-fill"></i>
+                                                </button>
+                                            </div>
+                                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" th:field="*{internal}" id="isInternalCheck">
+                                                    <label class="form-check-label small text-secondary" for="isInternalCheck">
+                                                        <i class="bi bi-lock-fill me-1"></i>Internal note
+                                                    </label>
+                                                </div>
+                                                <small class="text-secondary">
+                                                    <kbd>⌘</kbd> + <kbd>Enter</kbd> to submit
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Activity Tab -->
+                        <div class="tab-pane fade" id="activity" role="tabpanel">
+                            <div class="activity-log">
+                                <!-- ✅ DYNAMIC LOOP -->
+                                <div th:each="log : ${activityLogs}" class="activity-item">
+                                    <div class="activity-icon bg-primary-subtle text-primary">
+                                        <i class="bi" th:classappend="${log.iconClass}"></i>
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-text" th:utext="${log.message}"></div>
+                                        <div class="activity-time" th:text="${#temporals.format(log.createdAt, 'dd MMM yyyy, HH:mm')}">Time</div>
+                                    </div>
+                                </div>
+
+                                <!-- Fallback if no logs exist yet -->
+                                <div th:if="${#lists.isEmpty(activityLogs)}" class="text-center py-4 text-secondary">
+                                    <i class="bi bi-clock-history fs-3 d-block mb-2 opacity-50"></i>
+                                    <p class="mb-0">No activity recorded yet.</p>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Properties & Metadata -->
+        <div class="col-lg-4">
+
+            <!-- Properties Panel with Inline Editing -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <!-- Assignee -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-0 property-item">
+                            <div class="d-flex align-items-center text-secondary">
+                                <i class="bi bi-person me-3"></i> <span class="small fw-bold">Assignee</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div th:if="${ticket.assignedTo != null}" class="avatar-sm bg-primary text-white"
+                                     th:text="${#strings.substring(ticket.assignedTo.username, 0, 1).toUpperCase()}">A</div>
+                                <span th:text="${ticket.assignedTo != null ? ticket.assignedTo.username : 'Unassigned'}"
+                                      th:classappend="${ticket.assignedTo == null} ? 'text-secondary fst-italic' : 'fw-bold'">User</span>
+                                <button class="btn btn-sm btn-link text-secondary p-0 ms-2 property-edit-btn"
+                                        data-bs-toggle="modal" data-bs-target="#assignModal" title="Change assignee">
+                                    <i class="bi bi-pencil small"></i>
+                                </button>
+                            </div>
+                        </li>
+
+                        <!-- Priority -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-0 property-item">
+                            <div class="d-flex align-items-center text-secondary">
+                                <i class="bi bi-flag me-3"></i> <span class="small fw-bold">Priority</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="priority-dot"
+                                      th:classappend="${ticket.priority.name() == 'HIGH'} ? 'priority-high' :
+                                                      (${ticket.priority.name() == 'MEDIUM'} ? 'priority-medium' : 'priority-low')"></span>
+                                <span class="fw-bold" th:text="${ticket.priority.displayName}">Medium</span>
+                                <button class="btn btn-sm btn-link text-secondary p-0 ms-2 property-edit-btn" title="Change priority">
+                                    <i class="bi bi-pencil small"></i>
+                                </button>
+                            </div>
+                        </li>
+
+                        <!-- Category -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-0 property-item">
+                            <div class="d-flex align-items-center text-secondary">
+                                <i class="bi bi-tag me-3"></i> <span class="small fw-bold">Category</span>
+                            </div>
+                            <span th:text="${ticket.category != null ? ticket.category.name : 'None'}"
+                                  th:classappend="${ticket.category == null} ? 'text-secondary fst-italic' : ''">Category</span>
+                        </li>
+
+                        <!-- Department -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-0 property-item">
+                            <div class="d-flex align-items-center text-secondary">
+                                <i class="bi bi-building me-3"></i> <span class="small fw-bold">Department</span>
+                            </div>
+                            <span th:text="${ticket.department != null ? ticket.department.name : 'None'}"
+                                  th:classappend="${ticket.department == null} ? 'text-secondary fst-italic' : ''">Dept</span>
+                        </li>
+
+                        <!-- Requester -->
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3 px-4 border-0 border-top property-item">
+                            <div class="d-flex align-items-center text-secondary">
+                                <i class="bi bi-person-badge me-3"></i> <span class="small fw-bold">Requester</span>
+                            </div>
+                            <span class="fw-bold" th:text="${ticket.requesterName}">Requester</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Enhanced SLA Widget with Progress Bar -->
+            <div class="card border-0 shadow-sm mb-4 sla-card"
+                 th:classappend="${ticket.slaStatus == 'BREACHED'} ? 'sla-breached' :
+                                 (${ticket.slaStatus == 'WITHIN_SLA' and ticket.slaHoursRemaining < 2} ? 'sla-warning' : 'sla-ok')">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-0">
+                            <i class="bi bi-hourglass-split me-2"></i>SLA Status
+                        </h6>
+                        <span class="sla-indicator"></span>
+                    </div>
+
+                    <div th:if="${ticket.status.name() == 'RESOLVED' or ticket.status.name() == 'CLOSED'}" class="sla-met">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        <span class="fw-bold">SLA Met</span>
+                        <div class="small text-secondary mt-1">Ticket resolved within SLA timeframe</div>
+                    </div>
+
+                    <div th:if="${ticket.slaStatus == 'BREACHED'}" class="sla-breached-content">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <span class="fw-bold">SLA Breached</span>
+                        <div class="small text-secondary mt-1">Response time exceeded</div>
+                        <div class="sla-progress-bar mt-3">
+                            <div class="sla-progress-fill sla-progress-danger" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <div th:if="${ticket.slaStatus == 'WITHIN_SLA'}" class="sla-within">
+                        <div class="d-flex justify-content-between align-items-baseline mb-2">
+                            <span class="fs-3 fw-bold" th:text="${ticket.slaHoursRemaining}">0</span>
+                            <span class="text-secondary small">hours remaining</span>
+                        </div>
+                        <div class="sla-progress-bar">
+                            <div class="sla-progress-fill"
+                                 th:style="'width: ' + ${(ticket.priority.slaHours - ticket.slaHoursRemaining) / ticket.priority.slaHours * 100} + '%'"></div>
+                        </div>
+                        <div class="small text-secondary mt-2">
+                            Due: <span th:text="${#temporals.format(ticket.createdAt.plusHours(ticket.priority.slaHours), 'dd MMM yyyy, HH:mm')}">Due date</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Time Tracking (Work Log) -->
+            <div class="card border-0 shadow-sm mb-4" th:if="${ticket.startedAt != null}">
+                <div class="card-body p-4">
+                    <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">
+                        <i class="bi bi-stopwatch me-2"></i>Time Tracking
+                    </h6>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="small text-secondary">Started</span>
+                        <span class="small fw-bold" th:text="${#temporals.format(ticket.startedAt, 'dd MMM HH:mm')}">Time</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2" th:if="${ticket.completedAt != null}">
+                        <span class="small text-secondary">Completed</span>
+                        <span class="small fw-bold" th:text="${#temporals.format(ticket.completedAt, 'dd MMM HH:mm')}">Time</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="small fw-bold">Total Duration</span>
+                        <span class="fs-5 fw-bold text-primary" th:text="${ticket.formattedDuration}">0h 0m</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+
+<!-- Assignment Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-badge me-2"></i>Change Assignee
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form th:action="@{/tickets/{id}/assign(id=${ticket.id})}" method="post">
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">Assign to:</label>
+                    <select name="userId" class="form-select">
+                        <option value="0">-- Unassign --</option>
+                        <option th:each="user : ${users}"
+                                th:value="${user.id}"
+                                th:text="${user.username}"
+                                th:selected="${ticket.assignedTo != null and ticket.assignedTo.id == user.id}">
+                        </option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-2"></i>Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script th:inline="javascript">
+    // ============================================
+    // QUICK ACTIONS
+    // ============================================
+    // ✅ FIXED: Use safe navigation operator
+    const currentUserId = /*[[${currentUser?.id}]]*/ null;
+    const ticketId = /*[[${ticket.id}]]*/ 0;
+
+    function assignToMe() {
+        if (!currentUserId) {
+            showToast('Error', 'You must be logged in to assign tickets');
+            return;
+        }
+
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+        const csrfParam = document.querySelector('meta[name="_csrf_parameterName"]')?.content;
+
+        if (!csrfToken || !csrfParam) {
+            console.error('CSRF meta tags not found!');
+            showToast('Error', 'Security token missing. Please refresh the page.');
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/tickets/${ticketId}/assign`;
+
+        // Include both userId and CSRF token
+        form.innerHTML = `
+        <input type="hidden" name="userId" value="${currentUserId}">
+        <input type="hidden" name="${csrfParam}" value="${csrfToken}">
+    `;
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+
+    function toggleWatch() {
+        const btn = document.getElementById('watchBtn');
+        const text = document.getElementById('watchText');
+        const icon = btn.querySelector('i');
+
+        if (text.textContent === 'Watch') {
+            text.textContent = 'Watching';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+            btn.classList.replace('btn-outline-secondary', 'btn-primary');
+            showToast('Subscribed', 'You will receive legacyTicketNotificationServices for this ticket');
+        } else {
+            text.textContent = 'Watch';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+            btn.classList.replace('btn-primary', 'btn-outline-secondary');
+            showToast('Unsubscribed', 'You will no longer receive legacyTicketNotificationServices');
+        }
+    }
+
+    function duplicateTicket() {
+        window.location.href = `/tickets/new?duplicate=${ticketId}`;
+    }
+
+    function exportTicket() {
+        window.location.href = `/tickets/${ticketId}/export`;
+    }
+
+    function editDescription() {
+        showToast('Coming Soon', 'Inline editing will be available in the next update');
+    }
+
+    function downloadAll() {
+        showToast('Downloading', 'Preparing all attachments for download...');
+    }
+
+    // ============================================
+    // COMMENT REACTIONS
+    // ============================================
+    function addReaction(btn) {
+        const reactions = ['👍', '❤️', '😄', '🎉', '😕', '👀'];
+        const reaction = reactions[Math.floor(Math.random() * reactions.length)];
+
+        const commentItem = btn.closest('.comment-item');
+        const reactionsDiv = commentItem.querySelector('.comment-reactions');
+
+        const existingReaction = reactionsDiv.querySelector(`[data-reaction="${reaction}"]`);
+        if (existingReaction) {
+            const count = parseInt(existingReaction.querySelector('.reaction-count').textContent);
+            existingReaction.querySelector('.reaction-count').textContent = count + 1;
+        } else {
+            const reactionBtn = document.createElement('button');
+            reactionBtn.className = 'reaction-badge';
+            reactionBtn.setAttribute('data-reaction', reaction);
+            reactionBtn.innerHTML = `${reaction} <span class="reaction-count">1</span>`;
+            reactionBtn.onclick = function() {
+                const count = parseInt(this.querySelector('.reaction-count').textContent);
+                this.querySelector('.reaction-count').textContent = count + 1;
+            };
+            reactionsDiv.appendChild(reactionBtn);
+        }
+    }
+
+    function replyToComment(btn) {
+        const commentItem = btn.closest('.comment-item');
+        const authorName = commentItem.querySelector('strong').textContent;
+        const textarea = document.querySelector('textarea[name="message"]');
+        textarea.value = `@${authorName} `;
+        textarea.focus();
+    }
+
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                e.preventDefault();
+                document.querySelector('form[method="post"]').submit();
+            }
+            return;
+        }
+
+        if (e.key === 'a' || e.key === 'A') {
+            e.preventDefault();
+            new bootstrap.Modal(document.getElementById('assignModal')).show();
+        }
+
+        if (e.key === 'w' || e.key === 'W') {
+            e.preventDefault();
+            toggleWatch();
+        }
+
+        if (e.key === 'r' || e.key === 'R') {
+            e.preventDefault();
+
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = `/tickets/${ticketId}/resolve`;
+
+            const csrf = document.querySelector('meta[name="_csrf"]');
+            if (csrf) {
+                form.innerHTML =
+                    `<input type="hidden"
+                    name="${document.querySelector('meta[name="_csrf_parameterName"]').content}"
+                    value="${csrf.content}">`;
+            }
+
+            document.body.appendChild(form);
+            form.submit();
+        }
+    });
+
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    function showToast(title, message) {
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-info alert-dismissible fade show position-fixed top-0 end-0 m-3 shadow-lg';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `<strong>${title}</strong><br>${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ============================================
+    // WEBSOCKET
+    // ============================================
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+
+    const socket = new SockJS('/ws');
+    const stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+
+    stompClient.connect({}, function () {
+        console.log("✅ WebSocket Connected");
+        stompClient.subscribe('/topic/legacyTicketNotificationServices', function (message) {
+            const data = JSON.parse(message.body);
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(data.title, { body: data.body });
+            }
+            showToast(data.title, data.body);
+            setTimeout(() => location.reload(), 2000);
+        });
+    });
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const icons = {
+            'pdf': 'bi-file-earmark-pdf text-danger',
+            'doc': 'bi-file-earmark-word text-primary',
+            'docx': 'bi-file-earmark-word text-primary',
+            'xls': 'bi-file-earmark-excel text-success',
+            'xlsx': 'bi-file-earmark-excel text-success',
+            'zip': 'bi-file-earmark-zip text-warning',
+            'txt': 'bi-file-earmark-text text-secondary'
+        };
+        return icons[ext] || 'bi-file-earmark text-secondary';
+    }
+</script>
+
+</body>
+</html>

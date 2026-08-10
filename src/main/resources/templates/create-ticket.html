@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Create Ticket')}"></head>
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_parameterName" th:content="${_csrf.parameterName}" />
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content create-ticket-page">
+
+    <!-- ==========================================
+         MOBILE HEADER (Compact)
+         ========================================== -->
+    <div class="mobile-header d-md-none">
+        <a href="/" class="back-btn" aria-label="Go back">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h1 class="mobile-title">New Ticket</h1>
+        <button type="submit" form="ticketForm" class="btn btn-primary btn-sm mobile-submit-top">
+            Submit
+        </button>
+    </div>
+
+    <!-- ==========================================
+         DESKTOP HEADER (Full)
+         ========================================== -->
+    <div class="page-header mb-4 d-none d-md-block">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb breadcrumb-chevron">
+                <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Create Ticket</li>
+            </ol>
+        </nav>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Create New Ticket</h1>
+                <p class="text-secondary mb-0">Report an issue or request support from the IT team.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()" id="saveDraftBtn">
+                    <i class="bi bi-save me-2"></i>Save Draft
+                </button>
+                <button type="submit" form="ticketForm" class="btn btn-primary">
+                    <i class="bi bi-send me-2"></i>Submit Ticket
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <form th:action="@{/tickets}" th:object="${ticketCreateRequest}" method="post" enctype="multipart/form-data" id="ticketForm">
+        <div class="row g-4">
+
+            <!-- ==========================================
+                 LEFT COLUMN: Core Details
+                 ========================================== -->
+            <div class="col-lg-8">
+
+                <!-- Issue Details Card -->
+                <div class="card border-0 shadow-sm mb-3 mb-md-4">
+                    <div class="card-body p-3 p-md-4">
+                        <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3 mb-md-4">Issue Details</h6>
+
+                        <!-- Requester Name -->
+                        <div class="mb-3 mb-md-4">
+                            <label for="requesterName" class="form-label fw-semibold small">
+                                Your Name <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0">
+                                    <i class="bi bi-person text-secondary"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0"
+                                       id="requesterName" th:field="*{requesterName}"
+                                       th:classappend="${#fields.hasErrors('requesterName')} ? 'is-invalid'"
+                                       placeholder="e.g., John Doe"
+                                       required
+                                       maxlength="100">
+                                <span class="input-group-text bg-transparent border-start-0 border-end-0 text-secondary small char-counter d-none d-md-inline" id="requesterNameCount">0/100</span>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('requesterName')}" th:errors="*{requesterName}"></div>
+                            </div>
+                        </div>
+
+                        <!-- Title -->
+                        <div class="mb-3 mb-md-4">
+                            <label for="title" class="form-label fw-semibold small">
+                                Issue Title <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control"
+                                   id="title" th:field="*{title}"
+                                   th:classappend="${#fields.hasErrors('title')} ? 'is-invalid'"
+                                   placeholder="Brief summary of the issue"
+                                   required
+                                   maxlength="200">
+                            <div class="d-flex justify-content-end mt-1">
+                                <small class="text-secondary char-counter d-none d-md-block" id="titleCount">0/200</small>
+                            </div>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+                        </div>
+
+                        <!-- Intercom -->
+                        <div class="mb-0">
+                            <label for="intercomNumber" class="form-label fw-semibold small">
+                                Intercom Number <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-transparent border-end-0">
+                                    <i class="bi bi-telephone text-secondary"></i>
+                                </span>
+                                <input type="text" class="form-control border-start-0"
+                                       id="intercomNumber" th:field="*{intercomNumber}"
+                                       placeholder="e.g., EXT-1234"
+                                       required
+                                       maxlength="50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Properties Card (MOVED UP on mobile for better UX) -->
+                <div class="card border-0 shadow-sm mb-3 mb-md-4 d-md-none">
+                    <div class="card-body p-3">
+                        <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Classification</h6>
+
+                        <!-- Department & Category in one row -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold small mb-1">Department *</label>
+                                <select class="form-select form-select-sm" name="departmentId" required>
+                                    <option value="" disabled selected>Select</option>
+                                    <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold small mb-1">Category *</label>
+                                <select class="form-select form-select-sm" name="categoryId" required>
+                                    <option value="" disabled selected>Select</option>
+                                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Compact Priority Selector (Mobile) -->
+                        <label class="form-label fw-semibold small mb-2">Priority *</label>
+                        <div class="btn-group w-100 priority-selector-mobile" role="group">
+                            <input type="radio" class="btn-check" name="priority" id="prioLowM" value="LOW" autocomplete="off"
+                                   th:checked="${ticketCreateRequest.priority == null or ticketCreateRequest.priority.name() == 'LOW'}">
+                            <label class="btn btn-outline-secondary btn-sm" for="prioLowM">
+                                Low
+                            </label>
+
+                            <input type="radio" class="btn-check" name="priority" id="prioMediumM" value="MEDIUM" autocomplete="off"
+                                   th:checked="${ticket.priority != null and ticket.priority.name() == 'MEDIUM'}">
+                            <label class="btn btn-outline-secondary btn-sm" for="prioMediumM">
+                                Medium
+                            </label>
+
+                            <input type="radio" class="btn-check" name="priority" id="prioHighM" value="HIGH" autocomplete="off"
+                                   th:checked="${ticket.priority != null and ticket.priority.name() == 'HIGH'}">
+                            <label class="btn btn-outline-secondary btn-sm" for="prioHighM">
+                                High
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description (Collapsible on Mobile) -->
+                <div class="card border-0 shadow-sm mb-3 mb-md-4">
+                    <div class="card-body p-3 p-md-4">
+                        <!-- Mobile: Collapsible Trigger -->
+                        <div class="d-md-none">
+                            <button class="collapsible-trigger w-100 d-flex justify-content-between align-items-center"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#descriptionCollapse"
+                                    aria-expanded="false">
+                                <span class="fw-semibold small">
+                                    <i class="bi bi-card-text me-2"></i>Description
+                                    <span class="text-secondary fw-normal">(Optional)</span>
+                                </span>
+                                <i class="bi bi-chevron-down collapsible-icon"></i>
+                            </button>
+                            <div class="collapse" id="descriptionCollapse">
+                                <div class="pt-3">
+                                    <textarea class="form-control form-control-sm" id="description" rows="4"
+                                              th:field="*{description}"
+                                              placeholder="What happened? Steps to reproduce..."
+                                              maxlength="5000"></textarea>
+                                    <div class="d-flex justify-content-end mt-1">
+                                        <small class="text-secondary char-counter" id="descriptionCountMobile">0/5000</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop: Always Visible -->
+                        <div class="d-none d-md-block">
+                            <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Description</h6>
+                            <label for="descriptionDesktop" class="form-label fw-semibold small">
+                                Steps to reproduce or additional context <span class="text-secondary fw-normal">(Optional)</span>
+                            </label>
+                            <textarea class="form-control" id="descriptionDesktop" rows="8"
+                                      th:field="*{description}"
+                                      placeholder="Please provide as much detail as possible..."
+                                      maxlength="5000"></textarea>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <div class="form-text mb-0">
+                                    <i class="bi bi-info-circle me-1"></i>Plain text only
+                                </div>
+                                <small class="text-secondary char-counter" id="descriptionCount">0/5000</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attachments (Collapsible on Mobile) -->
+                <div class="card border-0 shadow-sm mb-3 mb-md-4">
+                    <div class="card-body p-3 p-md-4">
+                        <!-- Mobile: Collapsible Trigger -->
+                        <div class="d-md-none">
+                            <button class="collapsible-trigger w-100 d-flex justify-content-between align-items-center"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#attachmentsCollapse"
+                                    aria-expanded="false">
+                                <span class="fw-semibold small">
+                                    <i class="bi bi-paperclip me-2"></i>Attachments
+                                    <span class="text-secondary fw-normal">(Optional)</span>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis ms-2 attachment-count-badge" style="display: none;">0</span>
+                                </span>
+                                <i class="bi bi-chevron-down collapsible-icon"></i>
+                            </button>
+                            <div class="collapse" id="attachmentsCollapse">
+                                <div class="pt-3">
+                                    <div class="file-dropzone file-dropzone-compact" id="fileDropzone" onclick="document.getElementById('files').click()">
+                                        <i class="bi bi-cloud-arrow-up fs-3 text-secondary mb-2 d-block"></i>
+                                        <p class="mb-0 small">Tap to upload or drag files</p>
+                                    </div>
+                                    <div id="fileList" class="mt-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Desktop: Always Visible -->
+                        <div class="d-none d-md-block">
+                            <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-3">Attachments</h6>
+                            <div class="file-dropzone" id="fileDropzoneDesktop" onclick="document.getElementById('filesDesktop').click()">
+                                <i class="bi bi-cloud-arrow-up fs-1 text-secondary mb-3 d-block"></i>
+                                <p class="mb-1 fw-semibold">Drag & drop files here</p>
+                                <p class="text-secondary small mb-3">or click to browse</p>
+                                <div class="d-flex gap-2 justify-content-center flex-wrap">
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis">Images</span>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis">Documents</span>
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis">PDFs</span>
+                                </div>
+                            </div>
+                            <div id="fileListDesktop" class="mt-3"></div>
+                            <div class="form-text mt-2">
+                                <i class="bi bi-info-circle me-1"></i>Max 10MB per file. Up to 10 files.
+                            </div>
+                        </div>
+
+                        <!-- Hidden file inputs -->
+                        <input type="file" name="files" id="files" multiple class="d-none"
+                               accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
+                        <input type="file" name="files" id="filesDesktop" multiple class="d-none"
+                               accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==========================================
+                 RIGHT COLUMN: Properties (Desktop Only)
+                 ========================================== -->
+            <div class="col-lg-4 d-none d-md-block">
+
+                <!-- Properties Card -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-body p-4">
+                        <h6 class="text-uppercase text-secondary fw-bold small ls-1 mb-4">Properties</h6>
+
+                        <!-- Department -->
+                        <div class="mb-4">
+                            <label for="departmentId" class="form-label fw-semibold small">
+                                Department <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="departmentId" name="departmentId" required>
+                                <option value="" disabled selected>Select Department</option>
+                                <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="mb-4">
+                            <label for="categoryId" class="form-label fw-semibold small">
+                                Category <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" id="categoryId" name="categoryId" required>
+                                <option value="" disabled selected>Select Category</option>
+                                <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                            </select>
+                        </div>
+
+                        <!-- Priority (Segmented Control) -->
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold small d-block mb-2">
+                                Priority <span class="text-danger">*</span>
+                            </label>
+                            <div class="btn-group w-100 priority-selector" role="group" aria-label="Priority selection">
+                                <input type="radio" class="btn-check" name="priority" id="prioLow" value="LOW" autocomplete="off"
+                                       th:checked="${ticket.priority == null or ticket.priority.name() == 'LOW'}">
+                                <label class="btn btn-outline-secondary" for="prioLow">
+                                    <i class="bi bi-arrow-down-circle me-1"></i>Low
+                                </label>
+
+                                <input type="radio" class="btn-check" name="priority" id="prioMedium" value="MEDIUM" autocomplete="off"
+                                       th:checked="${ticket.priority != null and ticket.priority.name() == 'MEDIUM'}">
+                                <label class="btn btn-outline-secondary" for="prioMedium">
+                                    <i class="bi bi-dash-circle me-1"></i>Medium
+                                </label>
+
+                                <input type="radio" class="btn-check" name="priority" id="prioHigh" value="HIGH" autocomplete="off"
+                                       th:checked="${ticket.priority != null and ticket.priority.name() == 'HIGH'}">
+                                <label class="btn btn-outline-secondary" for="prioHigh">
+                                    <i class="bi bi-arrow-up-circle me-1"></i>High
+                                </label>
+                            </div>
+                            <div id="priorityHelp" class="form-text mt-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                <span id="priorityDescription">Affects work but manageable</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Tips Card (Desktop Only) -->
+                <div class="card border-0 shadow-sm mb-4 bg-primary-subtle">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-lightbulb me-2"></i>Quick Tips
+                        </h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>Be specific in your title
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>Include steps to reproduce
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success me-2"></i>Attach screenshots if possible
+                            </li>
+                            <li class="mb-0">
+                                <i class="bi bi-check-circle text-success me-2"></i>Select the correct priority
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Keyboard Shortcuts (Desktop Only) -->
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-keyboard me-2"></i>Keyboard Shortcuts
+                        </h6>
+                        <div class="small">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary">Submit ticket</span>
+                                <span><kbd>⌘</kbd> + <kbd>Enter</kbd></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-secondary">Save draft</span>
+                                <span><kbd>⌘</kbd> + <kbd>S</kbd></span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-secondary">Cancel</span>
+                                <kbd>Esc</kbd>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==========================================
+             MOBILE STICKY SUBMIT BAR
+             ========================================== -->
+        <div class="mobile-submit-bar d-md-none">
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-send-fill me-2"></i>Submit Ticket
+            </button>
+        </div>
+
+        <!-- Spacer for sticky bar -->
+        <div class="d-md-none" style="height: 80px;"></div>
+    </form>
+</main>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script>
+    // ============================================
+    // RESPONSIVE FORM FIELD MANAGEMENT
+    // ============================================
+    function handleResponsiveFields() {
+        const isDesktop = window.innerWidth >= 768;
+
+        // Get all form fields
+        const mobileFields = document.querySelectorAll('.d-md-none select, .d-md-none input, .d-md-none textarea');
+        const desktopFields = document.querySelectorAll('.d-none.d-md-block select, .d-none.d-md-block input, .d-none.d-md-block textarea');
+
+        if (isDesktop) {
+            // Desktop view: enable desktop fields, disable mobile fields
+            desktopFields.forEach(field => {
+                field.disabled = false;
+                // Only mark as required if it has data-required="true"
+                if (field.dataset.required === 'true') {
+                    field.required = true;
+                } else {
+                    field.required = false;
+                }
+            });
+            mobileFields.forEach(field => {
+                field.disabled = true;
+                field.required = false;
+            });
+        } else {
+            // Mobile view: enable mobile fields, disable desktop fields
+            mobileFields.forEach(field => {
+                field.disabled = false;
+                // Only mark as required if it has data-required="true"
+                if (field.dataset.required === 'true') {
+                    field.required = true;
+                } else {
+                    field.required = false;
+                }
+            });
+            desktopFields.forEach(field => {
+                field.disabled = true;
+                field.required = false;
+            });
+        }
+    }
+
+    // Initialize on page load
+    handleResponsiveFields();
+
+    // Update on window resize (debounced)
+    let resizeTimeout;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(handleResponsiveFields, 150);
+    });
+
+    // Ensure correct state before form submission
+    document.getElementById('ticketForm').addEventListener('submit', function(e) {
+        handleResponsiveFields();
+
+        // Validate that required fields are filled
+        const isDesktop = window.innerWidth >= 768;
+        const deptSelect = isDesktop ? document.getElementById('departmentId') : document.querySelector('.d-md-none [name="departmentId"]');
+        const catSelect = isDesktop ? document.getElementById('categoryId') : document.querySelector('.d-md-none [name="categoryId"]');
+
+        if (!deptSelect.value || !catSelect.value) {
+            e.preventDefault();
+            showToast('Error', 'Please select Department and Category');
+
+            // Focus on the first empty field
+            if (!deptSelect.value) {
+                deptSelect.focus();
+                deptSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (!catSelect.value) {
+                catSelect.focus();
+                catSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+    });
+
+    // ============================================
+    // CHARACTER COUNTERS
+    // ============================================
+    function setupCounter(inputId, counterIds, maxLength) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+
+        input.addEventListener('input', function() {
+            const currentLength = this.value.length;
+            const text = `${currentLength}/${maxLength}`;
+
+            counterIds.forEach(id => {
+                const counter = document.getElementById(id);
+                if (counter) {
+                    counter.textContent = text;
+                    if (currentLength > maxLength * 0.9) {
+                        counter.classList.add('text-danger');
+                        counter.classList.remove('text-secondary');
+                    } else {
+                        counter.classList.remove('text-danger');
+                        counter.classList.add('text-secondary');
+                    }
+                }
+            });
+        });
+    }
+
+    setupCounter('requesterName', ['requesterNameCount'], 100);
+    setupCounter('title', ['titleCount'], 200);
+    setupCounter('description', ['descriptionCount', 'descriptionCountMobile'], 5000);
+    setupCounter('descriptionDesktop', ['descriptionCount'], 5000);
+
+    // ============================================
+    // PRIORITY DESCRIPTION (Desktop)
+    // ============================================
+    const priorityDescriptions = {
+        'LOW': 'Minor inconvenience, can wait',
+        'MEDIUM': 'Affects work but manageable',
+        'HIGH': 'Critical blocker, needs immediate attention'
+    };
+
+    document.querySelectorAll('input[name="priority"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const desc = document.getElementById('priorityDescription');
+            if (desc) desc.textContent = priorityDescriptions[this.value] || '';
+        });
+    });
+
+    // ============================================
+    // FILE DROPZONE
+    // ============================================
+    function setupDropzone(dropzoneId, fileInputId, fileListId) {
+        const dropzone = document.getElementById(dropzoneId);
+        const fileInput = document.getElementById(fileInputId);
+        const fileList = document.getElementById(fileListId);
+
+        if (!dropzone || !fileInput) return;
+
+        let selectedFiles = [];
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add('dragover');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('dragover');
+            }, false);
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            addFiles(Array.from(e.dataTransfer.files));
+        }, false);
+
+        fileInput.addEventListener('change', function() {
+            addFiles(Array.from(this.files));
+        });
+
+        function addFiles(files) {
+            files.forEach(file => {
+                if (file.size > 10 * 1024 * 1024) {
+                    showToast('Error', `File "${file.name}" exceeds 10MB limit`);
+                    return;
+                }
+                if (selectedFiles.length >= 10) {
+                    showToast('Error', 'Maximum 10 files allowed');
+                    return;
+                }
+                selectedFiles.push(file);
+            });
+            renderFileList();
+        }
+
+        function renderFileList() {
+            if (!fileList) return;
+            fileList.innerHTML = '';
+
+            if (selectedFiles.length === 0) {
+                fileInput.files = new DataTransfer().files;
+                updateAttachmentBadge(0);
+                return;
+            }
+
+            const ul = document.createElement('ul');
+            ul.className = 'list-group list-group-flush';
+
+            selectedFiles.forEach((file, index) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center py-2 px-0';
+                li.innerHTML = `
+                    <div class="d-flex align-items-center gap-2 text-truncate">
+                        <i class="bi ${getFileIcon(file.name)} text-secondary"></i>
+                        <div class="text-truncate">
+                            <div class="small fw-semibold text-truncate">${file.name}</div>
+                            <small class="text-secondary">${formatSize(file.size)}</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="this.closest('li').remove(); window.removeFile_${dropzoneId}(${index})">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                `;
+                ul.appendChild(li);
+            });
+
+            fileList.appendChild(ul);
+
+            const dataTransfer = new DataTransfer();
+            selectedFiles.forEach(file => dataTransfer.items.add(file));
+            fileInput.files = dataTransfer.files;
+
+            updateAttachmentBadge(selectedFiles.length);
+
+            window[`removeFile_${dropzoneId}`] = function(index) {
+                selectedFiles.splice(index, 1);
+                renderFileList();
+            };
+        }
+    }
+
+    function updateAttachmentBadge(count) {
+        const badge = document.querySelector('.attachment-count-badge');
+        if (badge) {
+            if (count > 0) {
+                badge.textContent = count;
+                badge.style.display = 'inline';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    setupDropzone('fileDropzone', 'files', 'fileList');
+    setupDropzone('fileDropzoneDesktop', 'filesDesktop', 'fileListDesktop');
+
+    function getFileIcon(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const icons = {
+            'jpg': 'bi-file-earmark-image', 'jpeg': 'bi-file-earmark-image',
+            'png': 'bi-file-earmark-image', 'gif': 'bi-file-earmark-image',
+            'pdf': 'bi-file-earmark-pdf',
+            'doc': 'bi-file-earmark-word', 'docx': 'bi-file-earmark-word',
+            'xls': 'bi-file-earmark-excel', 'xlsx': 'bi-file-earmark-excel',
+            'txt': 'bi-file-earmark-text', 'zip': 'bi-file-earmark-zip'
+        };
+        return icons[ext] || 'bi-file-earmark';
+    }
+
+    function formatSize(bytes) {
+        if (bytes === 0) return '0 B';
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+
+    // ============================================
+    // COLLAPSIBLE ICON ROTATION
+    // ============================================
+    document.querySelectorAll('.collapsible-trigger').forEach(trigger => {
+        const targetId = trigger.getAttribute('data-bs-target');
+        const target = document.querySelector(targetId);
+        const icon = trigger.querySelector('.collapsible-icon');
+
+        if (target && icon) {
+            target.addEventListener('show.bs.collapse', () => {
+                icon.style.transform = 'rotate(180deg)';
+            });
+            target.addEventListener('hide.bs.collapse', () => {
+                icon.style.transform = 'rotate(0deg)';
+            });
+        }
+    });
+
+    // ============================================
+    // KEYBOARD SHORTCUTS (Desktop Only)
+    // ============================================
+    document.addEventListener('keydown', function(e) {
+        if (window.innerWidth < 768) return;
+
+        if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            e.preventDefault();
+            document.getElementById('ticketForm').submit();
+        }
+
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+            e.preventDefault();
+            saveDraft();
+        }
+
+        if (e.key === 'Escape' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            window.location.href = '/';
+        }
+    });
+
+    // ============================================
+    // SAVE DRAFT
+    // ============================================
+    function saveDraft() {
+        const isDesktop = window.innerWidth >= 768;
+        const deptSelect = isDesktop ? document.getElementById('departmentId') : document.querySelector('.d-md-none [name="departmentId"]');
+        const catSelect = isDesktop ? document.getElementById('categoryId') : document.querySelector('.d-md-none [name="categoryId"]');
+
+        const formData = {
+            requesterName: document.getElementById('requesterName').value,
+            title: document.getElementById('title').value,
+            intercomNumber: document.getElementById('intercomNumber').value,
+            description: document.getElementById('description')?.value || document.getElementById('descriptionDesktop')?.value || '',
+            departmentId: deptSelect?.value || '',
+            categoryId: catSelect?.value || '',
+            priority: document.querySelector('input[name="priority"]:checked')?.value
+        };
+
+        localStorage.setItem('ticketDraft', JSON.stringify(formData));
+
+        const btn = document.getElementById('saveDraftBtn');
+        if (btn) {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check-lg me-2"></i>Saved!';
+            btn.classList.remove('btn-outline-secondary');
+            btn.classList.add('btn-success');
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('btn-success');
+                btn.classList.add('btn-outline-secondary');
+            }, 2000);
+        }
+
+        showToast('Success', 'Draft saved successfully');
+    }
+
+    // ============================================
+    // RESTORE DRAFT
+    // ============================================
+    (function() {
+        const draft = localStorage.getItem('ticketDraft');
+        if (!draft) return;
+
+        const data = JSON.parse(draft);
+        if (!confirm('You have a saved draft. Restore it?')) {
+            localStorage.removeItem('ticketDraft');
+            return;
+        }
+
+        if (data.requesterName) document.getElementById('requesterName').value = data.requesterName;
+        if (data.title) document.getElementById('title').value = data.title;
+        if (data.intercomNumber) document.getElementById('intercomNumber').value = data.intercomNumber;
+
+        const descMobile = document.getElementById('description');
+        const descDesktop = document.getElementById('descriptionDesktop');
+        if (descMobile) descMobile.value = data.description || '';
+        if (descDesktop) descDesktop.value = data.description || '';
+
+        const deptSelects = document.querySelectorAll('[name="departmentId"]');
+        const catSelects = document.querySelectorAll('[name="categoryId"]');
+        deptSelects.forEach(s => { if (data.departmentId) s.value = data.departmentId; });
+        catSelects.forEach(s => { if (data.categoryId) s.value = data.categoryId; });
+
+        if (data.priority) {
+            const radio = document.querySelector(`input[name="priority"][value="${data.priority}"]`);
+            if (radio) radio.checked = true;
+        }
+
+        ['requesterName', 'title'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.dispatchEvent(new Event('input'));
+        });
+
+        localStorage.removeItem('ticketDraft');
+    })();
+
+    // ============================================
+    // TOAST NOTIFICATIONS
+    // ============================================
+    function showToast(title, message) {
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-info alert-dismissible fade show position-fixed top-0 end-0 m-3 shadow-lg';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `
+            <strong>${title}</strong><br>${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ============================================
+    // WEBSOCKET
+    // ============================================
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+
+    const socket = new SockJS('/ws');
+    const stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+
+    stompClient.connect({}, function () {
+        stompClient.subscribe('/topic/legacyTicketNotificationServices', function (message) {
+            const data = JSON.parse(message.body);
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification(data.title, { body: data.body });
+            }
+        });
+    });
+</script>
+
+</body>
+</html>

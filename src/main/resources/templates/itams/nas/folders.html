@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/">Dashboard</a></li>
+                <li class="breadcrumb-item active">NAS Folders</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h1 class="h3 fw-bold mb-1">NAS Folder Management</h1>
+                <p class="text-secondary mb-0">Manage network shared folders and access controls</p>
+            </div>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addFolderModal"
+                    th:if="${#authorization.expression('hasAuthority(''nas:folder.manage'')')}">
+                <i class="bi bi-plus-circle me-2"></i>Add New Folder
+            </button>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${success}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Folder Name</th>
+                        <th>Network Path</th>
+                        <th>Sensitivity</th>
+                        <th>Approval Required</th>
+                        <th class="text-end pe-4">Description</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="folder : ${folders}">
+                        <td class="ps-4 fw-semibold">
+                            <i class="bi bi-folder me-2 text-primary"></i>
+                            <span th:text="${folder.folderName}">Folder Name</span>
+                        </td>
+                        <td>
+                            <code class="text-muted" th:text="${folder.networkPath}">\\NAS\Path</code>
+                        </td>
+                        <td>
+                                <span class="badge"
+                                                      th:classappend="${folder.sensitivityLevel == 'PUBLIC' ? 'bg-info-subtle text-info-emphasis' :
+                                                      (folder.sensitivityLevel == 'INTERNAL' ? 'bg-success-subtle text-success-emphasis' :
+                                                      (folder.sensitivityLevel == 'CONFIDENTIAL' ? 'bg-warning-subtle text-warning-emphasis' :
+                                                      'bg-danger-subtle text-danger-emphasis'))}"
+                                        th:text="${folder.sensitivityLevel}">
+                                    SENSITIVITY
+                                </span>
+                        </td>
+                        <td>
+                                <span th:if="${folder.requiresExecutiveApproval}" class="badge bg-warning-subtle text-warning-emphasis">
+                                    <i class="bi bi-shield-lock me-1"></i>MD Approval
+                                </span>
+                            <span th:unless="${folder.requiresExecutiveApproval}" class="badge bg-success-subtle text-success-emphasis">
+                                    <i class="bi bi-check-circle me-1"></i>IT Only
+                                </span>
+                        </td>
+                        <td class="text-end pe-4 text-muted" th:text="${folder.description}">Description</td>
+                        <td class="text-end pe-4">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    data-bs-toggle="modal" th:data-target="'#requestModal' + ${folder.id}">
+                                <i class="bi bi-person-plus"></i> Request Access
+                            </button>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(folders)}">
+                        <td colspan="5" class="text-center py-4 text-secondary">
+                            <i class="bi bi-folder-x display-6 d-block mb-2"></i>
+                            No NAS folders configured yet.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Add Folder Modal -->
+<div class="modal fade" id="addFolderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form th:action="@{/nas/folders/create}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New NAS Folder</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="folderName" class="form-label fw-semibold">Folder Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="folderName" name="folderName"
+                               placeholder="e.g., HR_CONFIDENTIAL" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="networkPath" class="form-label fw-semibold">Network Path <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="networkPath" name="networkPath"
+                               placeholder="\\NAS\Server\Share\Path" required>
+                        <div class="form-text">UNC path to the network share</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="sensitivityLevel" class="form-label fw-semibold">Sensitivity Level <span class="text-danger">*</span></label>
+                        <select class="form-select" id="sensitivityLevel" name="sensitivityLevel" required>
+                            <option value="PUBLIC">Public</option>
+                            <option value="INTERNAL">Internal</option>
+                            <option value="CONFIDENTIAL">Confidential</option>
+                            <option value="RESTRICTED">Restricted</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label fw-semibold">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="2"
+                                  placeholder="Brief description of this folder's contents"></textarea>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="requiresExecutiveApproval"
+                               name="requiresExecutiveApproval">
+                        <label class="form-check-label" for="requiresExecutiveApproval">
+                            Requires MD/CEO Approval
+                        </label>
+                        <div class="form-text">Enable for highly restricted folders requiring executive sign-off</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>Create Folder
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- Request Access Modals (Generated dynamically for each folder) -->
+<th:block th:each="folder : ${folders}">
+    <div class="modal fade" th:id="'requestModal' + ${folder.id}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/nas/folders/{id}/request(id=${folder.id})}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <div class="modal-header">
+                        <h5 class="modal-title">Request Access: <span th:text="${folder.folderName}">Folder</span></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info py-2">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span th:if="${folder.requiresExecutiveApproval}">This folder requires <strong>MD/CEO approval</strong>.</span>
+                            <span th:unless="${folder.requiresExecutiveApproval}">This folder requires <strong>IT approval</strong> only.</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="permLevel" class="form-label fw-semibold">Permission Level <span class="text-danger">*</span></label>
+                            <select class="form-select" id="permLevel" name="permissionLevel" required>
+                                <option value="READ">Read Only</option>
+                                <option value="WRITE">Read & Write</option>
+                                <option value="MODIFY">Modify</option>
+                                <option value="DELETE">Delete</option>
+                                <option value="FULL_CONTROL">Full Control</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="reqRemarks" class="form-label fw-semibold">Business Justification</label>
+                            <textarea class="form-control" id="reqRemarks" name="remarks" rows="2"
+                                      placeholder="Why do you need access to this folder?" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-2"></i>Submit Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</th:block>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Helper to get badge colors based on sensitivity
+    function getSensitivityBadge(level) {
+        switch(level) {
+            case 'PUBLIC': return 'bg-info-subtle text-info-emphasis';
+            case 'INTERNAL': return 'bg-success-subtle text-success-emphasis';
+            case 'CONFIDENTIAL': return 'bg-warning-subtle text-warning-emphasis';
+            case 'RESTRICTED': return 'bg-danger-subtle text-danger-emphasis';
+            default: return 'bg-secondary-subtle text-secondary-emphasis';
+        }
+    }
+</script>
+</body>
+</html>

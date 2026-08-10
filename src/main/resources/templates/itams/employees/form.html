@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+<main class="main-content">
+    <div class="page-header mb-4">
+        <h1 class="h3 fw-bold" th:text="${pageTitle}">Employee Form</h1>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="${employee.id != null ? '/itams/employees/' + employee.id : '/itams/employees'}" th:object="${employee}" method="post">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{fullName}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Employee ID</label>
+                        <input type="text" class="form-control" th:field="*{employeeId}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input type="email" class="form-control" th:field="*{email}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Phone</label>
+                        <input type="text" class="form-control" th:field="*{phone}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Department</label>
+                        <input type="text" class="form-control" th:field="*{department}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Designation</label>
+                        <input type="text" class="form-control" th:field="*{designation}">
+                    </div>
+                </div>
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <a href="/itams/employees" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

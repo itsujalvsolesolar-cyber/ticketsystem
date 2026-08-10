@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="h3 fw-bold mb-1">Recycle Bin</h1>
+            <p class="text-secondary mb-0">Recover accidentally deleted records</p>
+        </div>
+    </div>
+
+    <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Ticket ID</th>
+                        <th>Title</th>
+                        <th>Deleted By</th>
+                        <th>Deleted At</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="ticket : ${deletedTickets}">
+                        <td class="ps-4 fw-semibold" th:text="'#' + ${ticket.id}">ID</td>
+                        <td th:text="${ticket.title}">Title</td>
+                        <td th:text="${ticket.deletedBy}">User</td>
+                        <td th:text="${#temporals.format(ticket.deletedAt, 'dd MMM yyyy, HH:mm')}">Date</td>
+                        <td class="text-end pe-4">
+                            <form th:action="@{/audit/recycle-bin/ticket/{id}/restore(id=${ticket.id})}" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i> Restore
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(deletedTickets)}">
+                        <td colspan="5" class="text-center py-5 text-secondary">
+                            <i class="bi bi-trash fs-1 d-block mb-2"></i>
+                            Recycle bin is empty.
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<meta name="_csrf" th:content="${_csrf.token}" />
+<meta name="_csrf_header" th:content="${_csrf.headerName}" />
+<body>
+
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+
+    <!-- ==========================================
+         PAGE HEADER
+         ========================================== -->
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 class="h3 fw-bold mb-1">Dashboard</h1>
+                <p class="text-secondary mb-0">
+                    Welcome back, <strong th:text="${currentUser.username}">User</strong>
+                    <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill ms-2" th:text="${#strings.listJoin(currentUser.roles.![name], ', ')}">Role</span>
+                </p>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <!-- Export Button -->
+                <a th:href="@{/export(status=${selectedStatus}, priority=${selectedPriority}, categoryId=${selectedCategoryId}, departmentId=${selectedDepartmentId}, search=${selectedSearch})}"
+                   class="btn btn-outline-secondary btn-sm d-none d-md-inline-flex align-items-center"
+                   data-bs-toggle="tooltip"
+                   title="Export to CSV">
+                    <i class="bi bi-download me-2"></i> Export
+                </a>
+
+                <!-- Notification Bell -->
+                <div class="dropdown">
+                    <button class="btn btn-light position-relative border-0" type="button"
+                            id="notificationBell" data-bs-toggle="dropdown" aria-expanded="false"
+                            aria-label="Notifications">
+                        <i class="bi bi-bell fs-5"></i>
+                        <span id="notificationCount" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              style="display: none; font-size: 0.65rem;">
+                            0
+                        </span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="notificationBell"
+                        style="width: 380px; max-height: 500px; overflow-y: auto;">
+                        <li class="dropdown-header d-flex justify-content-between align-items-center py-3 px-3 border-bottom">
+                            <strong class="small">Notifications</strong>
+                            <button class="btn btn-link btn-sm p-0 text-primary text-decoration-none" onclick="markAllAsRead()" aria-label="Mark all as read">
+                                <small><i class="bi bi-check2-all me-1"></i>Mark all read</small>
+                            </button>
+                        </li>
+                        <div id="notificationList" class="py-2">
+                            <li class="text-center text-secondary py-4">
+                                <i class="bi bi-hourglass-split fs-3 d-block mb-2"></i>
+                                <small>Loading...</small>
+                            </li>
+                        </div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         ANALYTICS CARDS (Modern Soft Design)
+         ========================================== -->
+    <div class="row g-3 mb-4">
+        <!-- Total Tickets -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-ticket-perforated-fill"></i>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">All Time</span>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size: 2rem;" th:text="${totalCount}">0</h2>
+                    <p class="text-secondary small mb-0">Total Tickets</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Open Tickets -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-danger-subtle text-danger">
+                            <i class="bi bi-exclamation-circle-fill"></i>
+                        </div>
+                        <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill">Active</span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-danger" style="font-size: 2rem;" th:text="${openCount}">0</h2>
+                    <p class="text-secondary small mb-0">Open Tickets</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resolved Tickets -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-success-subtle text-success">
+                            <i class="bi bi-check-circle-fill"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Completed</span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-success" style="font-size: 2rem;" th:text="${resolvedCount}">0</h2>
+                    <p class="text-secondary small mb-0">Resolved</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Archived Tickets (Replace the Closed card with this) -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-secondary-subtle text-secondary">
+                            <i class="bi bi-archive-fill"></i>
+                        </div>
+                        <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill">Archived</span>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size: 2rem; color: var(--text-secondary);" th:text="${archivedCount}">0</h2>
+                    <p class="text-secondary small mb-0">Archived</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================
+         SEARCH & FILTERS
+         ========================================== -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center">
+                <div class="col-12 col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0">
+                            <i class="bi bi-search text-secondary"></i>
+                        </span>
+                        <input type="text" class="form-control border-start-0"
+                               id="searchInput" name="search"
+                               placeholder="Search tickets... (Press / to focus)"
+                               th:value="${selectedSearch}"
+                               aria-label="Search tickets">
+                        <button class="btn btn-outline-secondary border-start-0" type="button" id="clearSearch" style="display: none;" aria-label="Clear search">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-6 col-md-2">
+                    <button class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#filterCollapse"
+                            aria-expanded="false" aria-controls="filterCollapse">
+                        <i class="bi bi-funnel me-2"></i> Filters
+                        <span id="activeFilterCount" class="badge bg-danger ms-2" style="display: none;">0</span>
+                    </button>
+                </div>
+                <div class="col-6 col-md-2">
+                    <a href="/" class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center"
+                       data-bs-toggle="tooltip" title="Clear all filters" aria-label="Clear filters">
+                        <i class="bi bi-arrow-counterclockwise me-2"></i> Reset
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collapsible Filters -->
+        <div class="collapse" id="filterCollapse">
+            <div class="card-body pt-0 px-3 pb-3">
+                <div class="row g-3 pt-3 border-top">
+                    <div class="col-6 col-md-3">
+                        <label class="form-label fw-semibold small text-secondary mb-2" for="statusFilter">Status</label>
+                        <select class="form-select" name="status" id="statusFilter">
+                            <option value="">Active Tickets (Default)</option>
+                            <option value="OPEN" th:selected="${selectedStatus == 'OPEN'}">Open</option>
+                            <option value="IN_PROGRESS" th:selected="${selectedStatus == 'IN_PROGRESS'}">In Progress</option>
+                            <option value="RESOLVED" th:selected="${selectedStatus == 'RESOLVED'}">Resolved</option>
+                            <option value="CLOSED" th:selected="${selectedStatus == 'CLOSED'}">Closed</option>
+                            <option value="ARCHIVED" th:selected="${selectedStatus == 'ARCHIVED'}">Archived</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label fw-semibold small text-secondary mb-2" for="priorityFilter">Priority</label>
+                        <select class="form-select" name="priority" id="priorityFilter">
+                            <option value="">All Priorities</option>
+                            <option value="LOW" th:selected="${selectedPriority == 'LOW'}">Low</option>
+                            <option value="MEDIUM" th:selected="${selectedPriority == 'MEDIUM'}">Medium</option>
+                            <option value="HIGH" th:selected="${selectedPriority == 'HIGH'}">High</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label fw-semibold small text-secondary mb-2" for="categoryFilter">Category</label>
+                        <select class="form-select" name="categoryId" id="categoryFilter">
+                            <option value="">All Categories</option>
+                            <option th:each="cat : ${categories}" th:value="${cat.id}"
+                                    th:text="${cat.name}" th:selected="${selectedCategoryId == cat.id}"></option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <label class="form-label fw-semibold small text-secondary mb-2" for="departmentFilter">Department</label>
+                        <select class="form-select" name="departmentId" id="departmentFilter">
+                            <option value="">All Departments</option>
+                            <option th:each="dept : ${departments}" th:value="${dept.id}"
+                                    th:text="${dept.name}" th:selected="${selectedDepartmentId == dept.id}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" onclick="applyFilters()">
+                            <i class="bi bi-check-lg me-2"></i> Apply Filters
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Form for Filters -->
+    <form id="filterForm" method="get" action="/" style="display: none;">
+        <input type="hidden" name="search" id="formSearch">
+        <input type="hidden" name="status" id="formStatus">
+        <input type="hidden" name="priority" id="formPriority">
+        <input type="hidden" name="categoryId" id="formCategoryId">
+        <input type="hidden" name="departmentId" id="formDepartmentId">
+        <input type="hidden" name="sortBy" th:value="${sortBy}">
+        <input type="hidden" name="sortDir" th:value="${sortDir}">
+        <input type="hidden" name="page" value="0">
+        <input type="hidden" name="size" th:value="${pageSize}">
+    </form>
+
+    <!-- ==========================================
+         TICKETS TABLE / CARDS
+         ========================================== -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent border-bottom py-3 px-4 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold">Tickets</h5>
+            <div class="d-flex align-items-center gap-2">
+                <span class="text-secondary small">Show</span>
+                <form id="pageSizeForm" method="get" action="/" class="d-inline">
+                    <input type="hidden" name="page" value="0">
+                    <input type="hidden" name="status" th:value="${selectedStatus}">
+                    <input type="hidden" name="priority" th:value="${selectedPriority}">
+                    <input type="hidden" name="categoryId" th:value="${selectedCategoryId}">
+                    <input type="hidden" name="departmentId" th:value="${selectedDepartmentId}">
+                    <input type="hidden" name="search" th:value="${selectedSearch}">
+                    <input type="hidden" name="sortBy" th:value="${sortBy}">
+                    <input type="hidden" name="sortDir" th:value="${sortDir}">
+                    <select name="size" class="form-select form-select-sm" style="width: 70px;" onchange="this.form.submit()" aria-label="Items per page">
+                        <option value="10" th:selected="${pageSize == 10}">10</option>
+                        <option value="25" th:selected="${pageSize == 25}">25</option>
+                        <option value="50" th:selected="${pageSize == 50}">50</option>
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <!-- Desktop Table View -->
+            <div class="table-responsive d-none d-md-block">
+                <table class="table table-hover align-middle mb-0 ticket-table">
+                    <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 60px;">
+                            <a th:href="@{/(sortBy='id', sortDir=${sortDir == 'asc' && sortBy == 'id' ? 'desc' : 'asc'})}"
+                               class="text-decoration-none text-secondary d-inline-flex align-items-center small fw-semibold">
+                                ID <i class="bi ms-1" th:classappend="${sortBy == 'id'} ? (${sortDir == 'asc'} ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up'"></i>
+                            </a>
+                        </th>
+                        <th class="small fw-semibold text-secondary">Title</th>
+                        <th class="small fw-semibold text-secondary">Requester</th>
+                        <th class="small fw-semibold text-secondary">
+                            <a th:href="@{/(sortBy='status', sortDir=${sortDir == 'asc' && sortBy == 'status' ? 'desc' : 'asc'})}"
+                               class="text-decoration-none text-secondary d-inline-flex align-items-center">
+                                Status <i class="bi ms-1" th:classappend="${sortBy == 'status'} ? (${sortDir == 'asc'} ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up'"></i>
+                            </a>
+                        </th>
+                        <th class="small fw-semibold text-secondary">Priority</th>
+                        <th class="small fw-semibold text-secondary">SLA</th>
+                        <th class="small fw-semibold text-secondary">Assigned</th>
+                        <th class="small fw-semibold text-secondary">
+                            <a th:href="@{/(sortBy='createdAt', sortDir=${sortDir == 'asc' && sortBy == 'createdAt' ? 'desc' : 'asc'})}"
+                               class="text-decoration-none text-secondary d-inline-flex align-items-center">
+                                Created <i class="bi ms-1" th:classappend="${sortBy == 'createdAt'} ? (${sortDir == 'asc'} ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up'"></i>
+                            </a>
+                        </th>
+                        <th class="text-end pe-4 small fw-semibold text-secondary" style="width: 120px;">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="ticket : ${tickets}" class="ticket-row">
+                        <td class="ps-4 fw-bold text-secondary small" th:text="${ticket.id}"></td>
+                        <td>
+                            <a th:href="@{/tickets/{id}(id=${ticket.id})}" class="text-decoration-none text-dark fw-semibold small" th:text="${ticket.title}">Title</a>
+                        </td>
+                        <td class="small" th:text="${ticket.requesterName}"></td>
+                        <td>
+                                <span class="status-badge"
+                                      th:classappend="${ticket.status.name() == 'OPEN'} ? 'status-open' :
+                                                      (${ticket.status.name() == 'RESOLVED'} ? 'status-resolved' :
+                                                      (${ticket.status.name() == 'CLOSED'} ? 'status-closed' : 'status-progress'))"
+                                      th:text="${ticket.status.displayName}">Open</span>
+                        </td>
+                        <td>
+                                <span class="priority-badge"
+                                      th:classappend="${ticket.priority.name() == 'HIGH'} ? 'priority-high' :
+                                                      (${ticket.priority.name() == 'MEDIUM'} ? 'priority-medium' : 'priority-low')"
+                                      th:text="${ticket.priority.displayName}">Medium</span>
+                        </td>
+                        <td>
+                                <span th:if="${ticket.status.name() == 'RESOLVED' or ticket.status.name() == 'CLOSED'}" class="badge bg-success-subtle text-success-emphasis">
+                                    <i class="bi bi-check-circle"></i> Met
+                                </span>
+                            <span th:if="${ticket.slaStatus == 'BREACHED'}" class="badge bg-danger-subtle text-danger-emphasis">
+                                    <i class="bi bi-exclamation-triangle"></i> Breached
+                                </span>
+                            <span th:if="${ticket.slaStatus == 'WITHIN_SLA'}" class="badge bg-warning-subtle text-warning-emphasis">
+                                    <i class="bi bi-clock"></i> <span th:text="${ticket.slaHoursRemaining}">0</span>h
+                                </span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center" th:if="${ticket.assignedTo != null}">
+                                <div class="avatar-sm bg-primary-subtle text-primary-emphasis me-2"
+                                     th:text="${#strings.substring(ticket.assignedTo.username, 0, 1).toUpperCase()}">U</div>
+                                <span class="small" th:text="${ticket.assignedTo.username}">User</span>
+                            </div>
+                            <span th:if="${ticket.assignedTo == null}" class="text-secondary small fst-italic">Unassigned</span>
+                        </td>
+                        <td>
+                            <div class="small">
+                                <div class="fw-semibold" th:text="${#temporals.format(ticket.createdAt, 'dd MMM yyyy')}"></div>
+                                <div class="text-secondary" style="font-size: 0.75rem;" th:text="${#temporals.format(ticket.createdAt, 'HH:mm')}"></div>
+                            </div>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="btn-group btn-group-sm">
+                                <a th:href="@{/tickets/{id}(id=${ticket.id})}" class="btn btn-outline-secondary btn-icon" data-bs-toggle="tooltip" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <form th:if="${ticket.status.name() != 'RESOLVED' and ticket.status.name() != 'CLOSED'}"
+                                      th:action="@{/tickets/{id}/resolve(id=${ticket.id})}"
+                                      method="post"
+                                      class="d-inline">
+
+                                    <input type="hidden"
+                                           th:name="${_csrf.parameterName}"
+                                           th:value="${_csrf.token}" />
+
+                                    <button type="submit"
+                                            class="btn btn-outline-success btn-icon"
+                                            data-bs-toggle="tooltip"
+                                            title="Resolve">
+                                        <i class="bi bi-check-lg"></i>
+                                    </button>
+                                </form>
+                                <form th:action="@{/tickets/{id}/archive(id=${ticket.id})}"
+                                      method="post"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to archive this ticket?');">
+
+                                    <input type="hidden"
+                                           th:name="${_csrf.parameterName}"
+                                           th:value="${_csrf.token}" />
+
+                                    <button type="submit"
+                                            class="btn btn-outline-secondary btn-icon"
+                                            data-bs-toggle="tooltip"
+                                            title="Archive">
+                                        <i class="bi bi-archive"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Empty State -->
+                    <tr th:if="${#lists.isEmpty(tickets)}">
+                        <td colspan="9" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-inbox fs-1 text-secondary d-block mb-3"></i>
+                                <h5 class="fw-bold mb-2">No tickets found</h5>
+                                <p class="text-secondary mb-4">Try adjusting your filters or create a new ticket.</p>
+                                <a href="/tickets/new" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle me-2"></i>Create Ticket
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mobile Card View -->
+            <div class="d-md-none p-3">
+                <div th:each="ticket : ${tickets}" class="ticket-card mb-3">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-secondary-subtle text-secondary-emphasis small" th:text="'#' + ${ticket.id}">#1</span>
+                                <span class="status-badge"
+                                      th:classappend="${ticket.status.name() == 'OPEN'} ? 'status-open' :
+                                                      (${ticket.status.name() == 'RESOLVED'} ? 'status-resolved' :
+                                                      (${ticket.status.name() == 'CLOSED'} ? 'status-closed' : 'status-progress'))"
+                                      th:text="${ticket.status.displayName}">Open</span>
+                            </div>
+                            <a th:href="@{/tickets/{id}(id=${ticket.id})}" class="text-decoration-none text-dark fw-semibold d-block mb-1" th:text="${ticket.title}">Title</a>
+                            <div class="text-secondary small" th:text="${ticket.requesterName}">Requester</div>
+                        </div>
+                        <span class="priority-badge"
+                              th:classappend="${ticket.priority.name() == 'HIGH'} ? 'priority-high' :
+                                              (${ticket.priority.name() == 'MEDIUM'} ? 'priority-medium' : 'priority-low')"
+                              th:text="${ticket.priority.displayName}">Medium</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                        <div class="small text-secondary">
+                            <i class="bi bi-clock me-1"></i>
+                            <span th:text="${#temporals.format(ticket.createdAt, 'dd MMM yyyy')}">Date</span>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <a th:href="@{/tickets/{id}(id=${ticket.id})}" class="btn btn-outline-primary btn-sm">View</a>
+                            <form th:if="${ticket.status.name() != 'RESOLVED' and ticket.status.name() != 'CLOSED'}"
+                                  th:action="@{/tickets/{id}/resolve(id=${ticket.id})}"
+                                  method="post"
+                                  class="d-inline">
+
+                                <input type="hidden"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}" />
+
+                                <button type="submit" class="btn btn-outline-success btn-sm">
+                                    Resolve
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mobile Empty State -->
+                <div th:if="${#lists.isEmpty(tickets)}" class="text-center py-5">
+                    <i class="bi bi-inbox fs-1 text-secondary d-block mb-3"></i>
+                    <h5 class="fw-bold mb-2">No tickets found</h5>
+                    <p class="text-secondary mb-4">Try adjusting your filters or create a new ticket.</p>
+                    <a href="/tickets/new" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle me-2"></i>Create Ticket
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="card-footer bg-transparent border-top py-3 px-4" th:if="${totalPages > 1}">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="text-secondary small">
+                    Showing <strong th:text="${startItem}">1</strong>-<strong th:text="${endItem}">10</strong> of <strong th:text="${totalItems}">100</strong>
+                </div>
+                <nav aria-label="Ticket pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                            <a class="page-link" th:href="@{/(page=${currentPage - 1}, size=${pageSize}, status=${selectedStatus}, priority=${selectedPriority}, categoryId=${selectedCategoryId}, departmentId=${selectedDepartmentId}, search=${selectedSearch}, sortBy=${sortBy}, sortDir=${sortDir})}">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        <th:block th:each="i : ${#numbers.sequence(0, totalPages - 1)}">
+                            <li class="page-item" th:if="${i >= currentPage - 2 && i <= currentPage + 2}" th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link" th:href="@{/(page=${i}, size=${pageSize}, status=${selectedStatus}, priority=${selectedPriority}, categoryId=${selectedCategoryId}, departmentId=${selectedDepartmentId}, search=${selectedSearch}, sortBy=${sortBy}, sortDir=${sortDir})}" th:text="${i + 1}">1</a>
+                            </li>
+                        </th:block>
+                        <li class="page-item" th:classappend="${currentPage == totalPages - 1} ? 'disabled'">
+                            <a class="page-link" th:href="@{/(page=${currentPage + 1}, size=${pageSize}, status=${selectedStatus}, priority=${selectedPriority}, categoryId=${selectedCategoryId}, departmentId=${selectedDepartmentId}, search=${selectedSearch}, sortBy=${sortBy}, sortDir=${sortDir})}">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button (Mobile) -->
+    <a href="/tickets/new" class="btn btn-primary fab-create d-md-none" data-bs-toggle="tooltip" title="Create Ticket" aria-label="Create new ticket">
+        <i class="bi bi-plus-lg"></i>
+    </a>
+
+</main>
+
+<!-- ========================================== -->
+<!-- PHASE 11: EXPIRING ASSETS WIDGET           -->
+<!-- ========================================== -->
+<div class="card border-0 shadow-sm mb-4" th:if="${expiringAssets != null and #lists.isEmpty(expiringAssets) == false}">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-semibold text-danger">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            Warranties / AMC Expiring in 30 Days
+            <span class="badge bg-danger ms-2" th:text="${expiringCount}">0</span>
+        </h5>
+        <a href="/itams/assets" class="btn btn-sm btn-outline-danger">View All Assets</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                <tr>
+                    <th class="ps-4">Asset Tag</th>
+                    <th>Asset Name</th>
+                    <th>Warranty Ends</th>
+                    <th>AMC Ends</th>
+                    <th class="text-end pe-4">Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="asset : ${expiringAssets}">
+                    <td class="ps-4 fw-semibold" th:text="${asset.assetTag}">TAG-001</td>
+                    <td th:text="${asset.name}">Laptop</td>
+
+                    <!-- Simplified Date Display (No assignedTo reference) -->
+                    <td th:text="${asset.warrantyEndDate != null ? #temporals.format(asset.warrantyEndDate, 'dd MMM yyyy') : 'N/A'}">
+                        Date
+                    </td>
+                    <td th:text="${asset.amcEndDate != null ? #temporals.format(asset.amcEndDate, 'dd MMM yyyy') : 'N/A'}">
+                        Date
+                    </td>
+
+                    <td class="text-end pe-4">
+                        <a th:href="@{/itams/assets/{id}(id=${asset.id})}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+
+<script th:inline="javascript">
+    // ============================================
+    // KEYBOARD SHORTCUTS
+    // ============================================
+    document.addEventListener('keydown', function(e) {
+        // "/" to focus search
+        if (e.key === '/' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            document.getElementById('searchInput').focus();
+        }
+
+        // "Esc" to clear search
+        if (e.key === 'Escape' && document.activeElement.id === 'searchInput') {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('clearSearch').style.display = 'none';
+            document.getElementById('searchInput').blur();
+        }
+    });
+
+    // ============================================
+    // SEARCH DEBOUNCING
+    // ============================================
+    let searchTimeout;
+    const searchInput = document.getElementById('searchInput');
+    const clearSearchBtn = document.getElementById('clearSearch');
+
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+
+        // Show/hide clear button
+        clearSearchBtn.style.display = this.value ? 'block' : 'none';
+
+        // Debounce search (wait 500ms after user stops typing)
+        searchTimeout = setTimeout(() => {
+            document.getElementById('formSearch').value = this.value;
+            // Auto-submit if user has been typing
+            if (this.value.length > 2) {
+                document.getElementById('filterForm').submit();
+            }
+        }, 500);
+    });
+
+    clearSearchBtn.addEventListener('click', function() {
+        searchInput.value = '';
+        this.style.display = 'none';
+        document.getElementById('formSearch').value = '';
+        document.getElementById('filterForm').submit();
+    });
+
+    // ============================================
+    // FILTER SYSTEM
+    // ============================================
+    ['statusFilter', 'priorityFilter', 'categoryFilter', 'departmentFilter'].forEach(id => {
+        const filter = document.getElementById(id);
+        if (filter) {
+            filter.addEventListener('change', updateActiveFilterCount);
+        }
+    });
+
+    function updateActiveFilterCount() {
+        let count = 0;
+        if (document.getElementById('statusFilter').value) count++;
+        if (document.getElementById('priorityFilter').value) count++;
+        if (document.getElementById('categoryFilter').value) count++;
+        if (document.getElementById('departmentFilter').value) count++;
+
+        const badge = document.getElementById('activeFilterCount');
+        if (count > 0) {
+            badge.textContent = count;
+            badge.style.display = 'inline';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    updateActiveFilterCount();
+
+    function applyFilters() {
+        const statusValue = document.getElementById('statusFilter').value;
+
+        document.getElementById('formStatus').value = statusValue;
+        document.getElementById('formPriority').value = document.getElementById('priorityFilter').value;
+        document.getElementById('formCategoryId').value = document.getElementById('categoryFilter').value;
+        document.getElementById('formDepartmentId').value = document.getElementById('departmentFilter').value;
+        document.getElementById('formSearch').value = searchInput.value;
+        document.getElementById('filterForm').submit();
+    }
+
+    // ============================================
+    // DELETE CONFIRMATION
+    // ============================================
+    function confirmDelete(btn) {
+        const ticketId = btn.getAttribute('data-ticket-id');
+        if (confirm(`Are you sure you want to delete ticket #${ticketId}?`)) {
+            window.location.href = `/tickets/${ticketId}/delete`;
+        }
+    }
+
+    // ============================================
+    // NOTIFICATION SYSTEM
+    // ============================================
+    function loadNotifications() {
+        fetch('/api/notifications')
+            .then(response => response.json())
+            .then(notifications => {
+                const list = document.getElementById('notificationList');
+                if (notifications.length === 0) {
+                    list.innerHTML = '<li class="text-center text-secondary py-4"><small>No notifications</small></li>';
+                } else {
+                    list.innerHTML = notifications.map(n => {
+                        // ✅ NEW: Determine border color and icon based on priority
+                        let borderColor = 'border-primary';
+                        let icon = 'bi-bell-fill text-primary';
+
+                        if (n.priority === 'CRITICAL') {
+                            borderColor = 'border-danger';
+                            icon = 'bi-exclamation-octagon-fill text-danger';
+                        } else if (n.priority === 'HIGH') {
+                            borderColor = 'border-warning';
+                            icon = 'bi-exclamation-triangle-fill text-warning';
+                        } else if (n.priority === 'MEDIUM') {
+                            borderColor = 'border-info';
+                            icon = 'bi-info-circle-fill text-info';
+                        } else if (n.priority === 'LOW') {
+                            borderColor = 'border-secondary';
+                            icon = 'bi-chat-left-text-fill text-secondary';
+                        }
+
+                        return `
+                        <li class="dropdown-item d-flex align-items-start ${!n.read ? 'border-start border-3 ' + borderColor + ' bg-light' : 'opacity-75'}"
+                            style="cursor: pointer; border-bottom: 1px solid var(--border-color); transition: all 0.2s;"
+                            data-notification-id="${n.id}"
+                            data-reference-id="${n.referenceId || ''}"
+                            data-module="${n.module || ''}">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <i class="bi ${icon}"></i>
+                                    <div class="fw-semibold small">${n.title}</div>
+                                </div>
+                                <div class="text-secondary small">${n.message}</div>
+                                <div class="text-secondary" style="font-size: 0.7rem;">
+                                    ${formatTimeAgo(n.createdAt)}
+                                    ${!n.read ? '<span class="badge bg-primary rounded-pill ms-1">New</span>' : ''}
+                                </div>
+                            </div>
+                        </li>
+                        `;
+                    }).join('');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notifications:', error);
+                const list = document.getElementById('notificationList');
+                list.innerHTML = `
+                <li class="text-center text-danger py-4">
+                    <i class="bi bi-exclamation-triangle fs-3 d-block mb-2"></i>
+                    <small>Failed to load notifications</small>
+                    <button class="btn btn-sm btn-outline-danger mt-2" onclick="loadNotifications()">Retry</button>
+                </li>`;
+            });
+
+        // Update unread count
+        fetch('/api/notifications/count')
+            .then(response => response.json())
+            .then(count => {
+                const badge = document.getElementById('notificationCount');
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'block';
+                } else {
+                    badge.textContent = '0';
+                    badge.style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error loading notification count:', error));
+    }
+
+    function markAsRead(id) {
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        fetch(`/api/notifications/${id}/read`, {  // ✅ NEW ENDPOINT
+            method: 'POST',
+            headers: { [csrfHeader]: csrfToken }
+        })
+            .then(() => {
+                loadNotifications();
+            })
+            .catch(error => {
+                console.error('Error marking notification as read:', error);
+            });
+    }
+
+    function markAllAsRead() {
+        const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+        fetch('/api/notifications/read-all', {  // ✅ NEW ENDPOINT
+            method: 'POST',
+            headers: { [csrfHeader]: csrfToken }
+        })
+            .then(() => {
+                loadNotifications();
+            })
+            .catch(error => {
+                console.error('Error marking all as read:', error);
+            });
+    }
+
+    function formatTimeAgo(dateArray) {
+        const date = new Date(dateArray);
+        const now = new Date();
+        const diff = Math.floor((now - date) / 1000);
+
+        if (diff < 60) return 'Just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    loadNotifications();
+
+    // ============================================
+    // WEBSOCKET
+    // ============================================
+    let stompClient = null;
+
+    function connectWebSocket() {
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        stompClient.debug = null;
+
+        stompClient.connect({}, function () {
+            console.log("✅ WebSocket Connected");
+            stompClient.subscribe('/topic/legacyTicketNotificationServices', function (message) {
+                const data = JSON.parse(message.body);
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification(data.title, { body: data.body });
+                }
+                showToast(data.title, data.body);
+                loadNotifications();
+            });
+        }, function(error) {
+            console.error("WebSocket error:", error);
+            setTimeout(connectWebSocket, 5000);
+        });
+    }
+
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+
+    connectWebSocket();
+
+    function showToast(title, body) {
+        const toast = document.createElement('div');
+        toast.className = 'alert alert-info alert-dismissible fade show position-fixed top-0 end-0 m-3 shadow-lg';
+        toast.style.zIndex = '9999';
+        toast.innerHTML = `<strong>${title}</strong><br>${body}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 5000);
+    }
+
+    // ============================================
+    // TOOLTIPS
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function (el) {
+            return new bootstrap.Tooltip(el);
+        });
+    });
+
+    // ============================================
+    // NOTIFICATION CLICK HANDLER (Event Delegation)
+    // ============================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationList = document.getElementById('notificationList');
+
+        if (notificationList) {
+            notificationList.addEventListener('click', function(e) {
+                const notificationItem = e.target.closest('[data-notification-id]');
+
+                if (notificationItem) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const notificationId = notificationItem.getAttribute('data-notification-id');
+                    const module = notificationItem.getAttribute('data-module');
+                    const referenceId = notificationItem.getAttribute('data-reference-id');
+
+                    // Mark as read first
+                    markAsRead(notificationId);
+
+                    // Navigate based on module
+                    if (module === 'TICKETING' && referenceId) {
+                        setTimeout(() => {
+                            window.location.href = `/tickets/${referenceId}`;
+                        }, 300);
+                    } else if (module === 'ITAMS' && referenceId) {
+                        setTimeout(() => {
+                            window.location.href = `/itams/assets/${referenceId}`;
+                        }, 300);
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

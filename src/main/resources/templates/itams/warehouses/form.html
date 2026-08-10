@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <nav aria-label="breadcrumb" class="mb-2">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/itams/warehouses">Warehouses</a></li>
+                <li class="breadcrumb-item active" th:text="${warehouse.id != null ? 'Edit' : 'New'}"></li>
+            </ol>
+        </nav>
+        <h1 class="h3 fw-bold" th:text="${pageTitle}"></h1>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <form th:action="${warehouse.id != null ? '/itams/warehouses/' + warehouse.id : '/itams/warehouses'}"
+                  th:object="${warehouse}" method="post">
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label fw-semibold">
+                            Warehouse Name <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="name" th:field="*{name}"
+                               th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'"
+                               placeholder="e.g., Main IT Store" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="location" class="form-label fw-semibold">Location</label>
+                        <input type="text" class="form-control" id="location" th:field="*{location}"
+                               placeholder="e.g., Building A, Floor 2">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="managerName" class="form-label fw-semibold">Manager Name</label>
+                        <input type="text" class="form-control" id="managerName" th:field="*{managerName}"
+                               placeholder="Person in charge">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="capacity" class="form-label fw-semibold">Max Capacity (Units)</label>
+                        <input type="number" class="form-control" id="capacity" th:field="*{capacity}"
+                               min="1" placeholder="e.g., 500">
+                        <div class="form-text">Leave blank for unlimited capacity</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold d-block">Status</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="isActive" th:field="*{isActive}">
+                            <label class="form-check-label" for="isActive">Active Warehouse</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle me-2"></i>
+                        <span th:text="${warehouse.id != null ? 'Update' : 'Create'}"></span>
+                    </button>
+                    <a href="/itams/warehouses" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+</body>
+</html>
