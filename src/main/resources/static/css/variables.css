@@ -3,15 +3,23 @@
         /* Sidebar */
         --sidebar-width: 260px;
 
+        /* VSOLE SOLAR Brand Colors */
+        --vsole-yellow: #FCB744;
+        --vsole-yellow-rgb: 252, 183, 68;
+        --vsole-blue: #243A5C;
+        --vsole-blue-rgb: 36, 58, 92;
+
         /* Colors - Light Mode */
         --bg-body: #f8fafc;
         --bg-surface: #ffffff;
-        --bg-sidebar: #0f172a;
-        --bg-sidebar-hover: #1e293b;
+
+        /* Sidebar uses VSOLE Blue, with a subtle VSOLE Yellow hover */
+        --bg-sidebar: var(--vsole-blue);
+        --bg-sidebar-hover: rgba(252, 183, 68, 0.1);
 
         --text-primary: #0f172a;
         --text-secondary: #64748b;
-        --text-sidebar: #94a3b8;
+        --text-sidebar: #cbd5e1; /* Lightened slightly for better contrast on dark blue */
         --text-sidebar-active: #ffffff;
 
         --border-color: #e2e8f0;
@@ -25,17 +33,19 @@
         --danger-bg: rgba(239, 68, 68, 0.1);
         --danger-text: #dc2626;
 
-        --warning: #f59e0b;
-        --warning-bg: rgba(245, 158, 11, 0.1);
-        --warning-text: #d97706;
+        /* Warning uses VSOLE Yellow for brand consistency */
+        --warning: var(--vsole-yellow);
+        --warning-bg: rgba(252, 183, 68, 0.1);
+        --warning-text: #b4832d;
 
         --info: #3b82f6;
         --info-bg: rgba(59, 130, 246, 0.1);
         --info-text: #2563eb;
 
-        /* Accent */
-        --accent-primary: #2563eb;
-        --accent-hover: #1d4ed8;
+        /* Accent (Primary Action Colors) */
+        --accent-primary: var(--vsole-yellow);
+        --accent-hover: #e5a53a; /* Slightly darker yellow for hover states */
+        --accent-text: var(--vsole-blue); /* Dark text on yellow buttons for readability */
 
         /* Shadows */
         --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
@@ -77,7 +87,7 @@
         --bg-body: #020617;
         --bg-surface: #0f172a;
         --bg-sidebar: #020617;
-        --bg-sidebar-hover: #1e293b;
+        --bg-sidebar-hover: rgba(252, 183, 68, 0.15);
 
         --text-primary: #f8fafc;
         --text-secondary: #94a3b8;

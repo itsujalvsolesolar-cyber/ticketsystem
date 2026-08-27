@@ -66,8 +66,15 @@
                 </a>
             </li>
             <!-- IT Asset Management Section -->
-            <li class="nav-section-title" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
-                IT Assets
+            <li class="nav-section-title" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}"
+                style="color: var(--vsole-yellow);">
+                IT ASSETS
+            </li>
+            <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/dashboard') ? 'active' : ''}" href="/itams/dashboard">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Dashboard</span>
+                </a>
             </li>
 
             <li class="nav-item" th:if="${currentUser != null and (currentUser.hasRole('SUPER ADMIN') or currentUser.hasRole('IT MANAGER') or currentUser.hasRole('IT EXECUTIVE'))}">

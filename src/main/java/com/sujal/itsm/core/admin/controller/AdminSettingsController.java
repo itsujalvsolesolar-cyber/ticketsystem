@@ -5,10 +5,13 @@ import com.sujal.itsm.core.admin.service.SystemConfigurationService;
 import com.sujal.itsm.core.email.service.EmailService;
 import com.sujal.itsm.core.security.CurrentUserService;
 import com.sujal.itsm.core.user.model.AppUser;
+import com.sujal.itsm.core.user.model.Department;
+import com.sujal.itsm.core.user.model.Role;
 import com.sujal.itsm.core.user.repository.AppUserRepository;
 import com.sujal.itsm.ticketing.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -19,6 +22,7 @@ import com.sujal.itsm.ticketing.repository.CategoryRepository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Controller
 @RequestMapping("/admin")
@@ -34,6 +38,7 @@ public class AdminSettingsController {
     private final DepartmentRepository departmentRepository;
     private final CategoryRepository categoryRepository;
     private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @GetMapping("/console")
     public String showConsole(
@@ -141,5 +146,73 @@ public class AdminSettingsController {
         model.addAttribute("pageTitle", "System Settings");
 
         return "admin/settings";
+    }
+
+    /**
+     * Show Create User Form
+     */
+    @GetMapping("/users/new")
+    public String showCreateUserForm(Model model) {
+        model.addAttribute("pageTitle", "Create New User");
+        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("roles", roleRepository.findAll());
+        return "admin/users/create";
+    }
+
+    /**
+     * Create New User
+     */
+    @PostMapping("/users/create")
+    public String createUser(
+            @RequestParam String username,
+            @RequestParam String email,
+            @RequestParam String password,
+            @RequestParam Long roleId,
+            @RequestParam(required = false) Long departmentId,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            // Check if username already exists
+            if (userRepository.existsByUsername(username)) {
+                redirectAttributes.addFlashAttribute("error", "Username already exists");
+                return "redirect:/admin/users/new";
+            }
+
+            // Check if email already exists
+            if (userRepository.existsByEmail(email)) {
+                redirectAttributes.addFlashAttribute("error", "Email already exists");
+                return "redirect:/admin/users/new";
+            }
+
+            // Get role
+            Role role = roleRepository.findById(roleId)
+                    .orElseThrow(() -> new RuntimeException("Role not found"));
+
+            // Get department (optional)
+            Department department = null;
+            if (departmentId != null) {
+                department = departmentRepository.findById(departmentId)
+                        .orElse(null);
+            }
+
+            // Create user
+            AppUser user = new AppUser();
+            user.setUsername(username);
+            user.setEmail(email);
+            user.setPassword(passwordEncoder.encode(password)); // You'll need to inject PasswordEncoder
+            user.setActive(true);
+            user.setRoles(Set.of(role));
+            user.setDepartment(department);
+
+            userRepository.save(user);
+
+            redirectAttributes.addFlashAttribute("success", "User created successfully!");
+            return "redirect:/admin/settings";
+
+        } catch (Exception e) {
+            log.error("❌ Failed to create user", e);
+            redirectAttributes.addFlashAttribute("error", "Failed to create user: " + e.getMessage());
+            return "redirect:/admin/users/new";
+        }
     }
 }

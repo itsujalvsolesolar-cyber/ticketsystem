@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <!-- Page Header -->
+    <div class="page-header mb-4">
+        <h1 class="h3 fw-bold mb-1">IT Asset Management Dashboard</h1>
+        <p class="text-secondary mb-0">Overview of all IT assets, inventory, and warranties</p>
+    </div>
+
+    <!-- Error Alert -->
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <!-- Total Assets -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">Total</span>
+                    </div>
+                    <h2 class="fw-bold mb-1" style="font-size: 2rem;" th:text="${totalAssets}">0</h2>
+                    <p class="text-secondary small mb-0">Total Assets</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Available -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-success-subtle text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success-emphasis rounded-pill">Available</span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-success" style="font-size: 2rem;" th:text="${availableAssets}">0</h2>
+                    <p class="text-secondary small mb-0">Available Assets</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Assigned -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-warning-subtle text-warning">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill">Assigned</span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-warning" style="font-size: 2rem;" th:text="${assignedAssets}">0</h2>
+                    <p class="text-secondary small mb-0">Assigned Assets</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- In Repair -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 shadow-sm h-100 analytics-card">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="analytics-icon bg-info-subtle text-info">
+                            <i class="bi bi-wrench"></i>
+                        </div>
+                        <span class="badge bg-info-subtle text-info-emphasis rounded-pill">Maintenance</span>
+                    </div>
+                    <h2 class="fw-bold mb-1 text-info" style="font-size: 2rem;" th:text="${inRepairAssets}">0</h2>
+                    <p class="text-secondary small mb-0">In Repair</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts & Alerts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Category Distribution Chart -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-pie-chart me-2 text-primary"></i>Asset Category Distribution
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expiring Warranties -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0 fw-semibold text-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Warranties Expiring in 30 Days
+                        <span class="badge bg-danger ms-2" th:text="${expiringCount}">0</span>
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(expiringAssets)}" class="text-center py-5 text-secondary">
+                        <i class="bi bi-shield-check fs-1 d-block mb-2"></i>
+                        <p class="mb-0">No warranties expiring soon</p>
+                    </div>
+                    <div class="table-responsive" th:unless="${#lists.isEmpty(expiringAssets)}">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Asset Tag</th>
+                                <th>Name</th>
+                                <th>Expires</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="asset : ${expiringAssets}">
+                                <td class="ps-4">
+                                    <a th:href="@{/itams/assets/{id}(id=${asset.id})}" class="text-decoration-none fw-semibold" th:text="${asset.assetTag}"></a>
+                                </td>
+                                <td th:text="${asset.name}"></td>
+                                <td>
+                                        <span class="badge bg-warning-subtle text-warning-emphasis"
+                                              th:text="${asset.warrantyEndDate != null ? #temporals.format(asset.warrantyEndDate, 'dd MMM yyyy') : 'N/A'}"></span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Assets & Low Stock Row -->
+    <div class="row g-4">
+        <!-- Recent Assets -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-semibold">
+                        <i class="bi bi-clock-history me-2 text-primary"></i>Recently Added Assets
+                    </h5>
+                    <a href="/itams/assets" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(recentAssets)}" class="text-center py-5 text-secondary">
+                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                        <p class="mb-0">No assets yet</p>
+                    </div>
+                    <div class="table-responsive" th:unless="${#lists.isEmpty(recentAssets)}">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Asset Tag</th>
+                                <th>Name</th>
+                                <th>Status</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="asset : ${recentAssets}">
+                                <td class="ps-4">
+                                    <a th:href="@{/itams/assets/{id}(id=${asset.id})}" class="text-decoration-none fw-semibold" th:text="${asset.assetTag}"></a>
+                                </td>
+                                <td th:text="${asset.name}"></td>
+                                <td>
+                                        <span class="badge"
+                                              th:classappend="${asset.status.name() == 'AVAILABLE'} ? 'bg-success-subtle text-success-emphasis' :
+                                                (${asset.status.name() == 'ASSIGNED'} ? 'bg-warning-subtle text-warning-emphasis' :
+                                                (${asset.status.name() == 'IN_REPAIR'} ? 'bg-info-subtle text-info-emphasis' :
+                                                'bg-secondary-subtle text-secondary-emphasis'))"
+                                              th:text="${asset.status.displayName}"></span>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Products -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-semibold text-danger">
+                        <i class="bi bi-exclamation-circle me-2"></i>Low Stock Alerts
+                        <span class="badge bg-danger ms-2" th:text="${lowStockProducts.size()}">0</span>
+                    </h5>
+                    <a href="/itams/products" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <div th:if="${#lists.isEmpty(lowStockProducts)}" class="text-center py-5 text-secondary">
+                        <i class="bi bi-check-circle fs-1 d-block mb-2 text-success"></i>
+                        <p class="mb-0">All stock levels are adequate</p>
+                    </div>
+                    <div class="table-responsive" th:unless="${#lists.isEmpty(lowStockProducts)}">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Product</th>
+                                <th>Current</th>
+                                <th>Min Level</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="product : ${lowStockProducts}">
+                                <td class="ps-4 fw-semibold" th:text="${product.name}"></td>
+                                <td>
+                                    <span class="badge bg-danger" th:text="${product.currentStock}"></span>
+                                </td>
+                                <td th:text="${product.minStockLevel}"></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+    // Category Distribution Chart
+    const categoryData = /*[[${categoryDistribution}]]*/ {};
+    const labels = Object.keys(categoryData);
+    const data = Object.values(categoryData);
+    const colors = ['#0d6efd', '#198754', '#ffc107', '#0dcaf0', '#d63384', '#6f42c1', '#fd7e14'];
+
+    if (labels.length > 0) {
+        new Chart(document.getElementById('categoryChart'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length)
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    } else {
+        document.getElementById('categoryChart').parentElement.innerHTML =
+            '<div class="text-center py-5 text-secondary"><i class="bi bi-pie-chart fs-1 d-block mb-2"></i><p>No category data available</p></div>';
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+
+<main class="main-content">
+    <div class="page-header mb-4">
+        <h1 class="h3 fw-bold mb-1">Employee Dashboard</h1>
+        <p class="text-secondary mb-0">Welcome back, <span th:text="${currentUser.fullName != null ? currentUser.fullName : currentUser.username}">User</span></p>
+    </div>
+
+    <div class="row g-4">
+        <!-- Quick Action: Create Ticket -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-plus-circle fs-1 text-primary mb-3"></i>
+                    <h5 class="fw-bold">Create Ticket</h5>
+                    <p class="text-secondary small">Report an issue or request IT support.</p>
+                    <a href="/tickets/new" class="btn btn-primary w-100">New Ticket</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Action: My Tickets -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-ticket-detailed fs-1 text-info mb-3"></i>
+                    <h5 class="fw-bold">My Tickets</h5>
+                    <p class="text-secondary small">View and track your support requests.</p>
+                    <a href="/tickets" class="btn btn-outline-info w-100">View Tickets</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Action: My Assets -->
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-laptop fs-1 text-success mb-3"></i>
+                    <h5 class="fw-bold">My Assets</h5>
+                    <p class="text-secondary small">View equipment assigned to you.</p>
+                    <a href="/employee/assets" class="btn btn-outline-success w-100">View Assets</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placeholder for future widgets -->
+    <div class="mt-4">
+        <div class="alert alert-info border-0 shadow-sm">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Coming Soon:</strong> Detailed tables for your active tickets, assigned assets, and software licenses will appear here.
+        </div>
+    </div>
+</main>
+</body>
+</html>

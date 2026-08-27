@@ -32,6 +32,8 @@ public interface AppUserRepository
   @EntityGraph(attributePaths = {"department", "roles"})
   Optional<AppUser> findByEmail(String email);
 
+  Optional<AppUser> findByEmployeeId(String employeeId);
+
   boolean existsByUsername(String username);
 
   boolean existsByEmail(String email);

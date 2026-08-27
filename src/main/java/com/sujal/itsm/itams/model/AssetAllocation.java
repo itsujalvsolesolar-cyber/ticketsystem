@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.sujal.itsm.itams.enums.AcceptanceStatus;
+import com.sujal.itsm.workflow.enums.SignatureType;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -70,4 +72,33 @@ public class AssetAllocation {
     @CreatedDate
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    // ===== REFINED FLOW: Employee acceptance & chain of custody =====
+    @Enumerated(EnumType.STRING)
+    @Column(name = "acceptance_status", nullable = false, length = 20)
+    @Builder.Default
+    private AcceptanceStatus acceptanceStatus = AcceptanceStatus.PENDING;
+
+    @Column(length = 500)
+    private String accessories; // e.g. "Charger, Laptop Bag, Mouse"
+
+    @Column(name = "accepted_at")
+    private LocalDateTime acceptedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "accepted_by_id")
+    private AppUser acceptedBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "signature_type", length = 20)
+    private SignatureType signatureType;
+
+    @Column(name = "signature_data", columnDefinition = "TEXT")
+    private String signatureData;
+
+    @Column(name = "acceptance_ip", length = 45)
+    private String acceptanceIp;
+
+    @Column(name = "acceptance_user_agent", length = 255)
+    private String acceptanceUserAgent;
 }

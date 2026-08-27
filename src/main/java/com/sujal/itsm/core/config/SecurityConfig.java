@@ -1,5 +1,6 @@
 package com.sujal.itsm.core.config;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -10,7 +11,10 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+  private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
 
   @Bean
   public PasswordEncoder passwordEncoder() {
@@ -19,36 +23,38 @@ public class SecurityConfig {
 
   @Bean
   public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-    http.authorizeHttpRequests(auth -> auth
+    http
+            .authorizeHttpRequests(auth -> auth
                     // 1. Public Routes
                     .requestMatchers("/ws/**", "/notifications/**", "/tickets/new", "/tickets",
                             "/submit-success", "/login", "/css/**", "/js/**", "/images/**",
                             "/uploads/**", "/favicon.ico", "/error").permitAll()
 
-                    // 2. ITAM Routes
-                    .requestMatchers("/itams/categories/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/brands/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/suppliers/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/assets/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/employees/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE", "ROLE_HR_MANAGER")
-                    .requestMatchers("/itams/products/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/warehouses/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/stock/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/software/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/access/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/itams/software-catalog/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
-                    .requestMatchers("/nas/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE", "ROLE_AGENT")
-                    .requestMatchers("/executive/**").hasAuthority("ROLE_SUPER_ADMIN") // Only Super Admin (CEO/MD)
-                    .requestMatchers("/admin/workflows/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER")// Inside filterChain method, add this line:
+                    // 2. Employee Portal Routes (Accessible to any authenticated user)
+                    .requestMatchers("/employee/**").authenticated()
 
-                    // 3. Admin/Settings Routes - ✅ FIXED: Use hasAnyAuthority with exact underscored names
+                    // 3. ITAM Routes (IT Staff & Admins only)
+                    .requestMatchers("/itams/categories/**", "/itams/brands/**", "/itams/suppliers/**",
+                            "/itams/assets/**", "/itams/employees/**", "/itams/products/**",
+                            "/itams/warehouses/**", "/itams/stock/**", "/itams/software-catalog/**",
+                            "/itams/software/**", "/itams/access/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER", "ROLE_IT_EXECUTIVE")
+
+                    // 4. Workflow & Admin Routes
+                    .requestMatchers("/admin/workflows/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER")
                     .requestMatchers("/admin/**").hasAnyAuthority("ROLE_SUPER_ADMIN", "ROLE_IT_MANAGER")
 
-                    // 4. All other requests require authentication
+                    // 5. All other requests require authentication
                     .anyRequest().authenticated()
             )
-            .formLogin(form -> form.loginPage("/login").defaultSuccessUrl("/", true).permitAll())
-            .logout(logout -> logout.logoutSuccessUrl("/login?logout").permitAll());
+            .formLogin(form -> form
+                    .loginPage("/login")
+                    .successHandler(customAuthenticationSuccessHandler) // <-- USE CUSTOM HANDLER HERE
+                    .permitAll()
+            )
+            .logout(logout -> logout
+                    .logoutSuccessUrl("/login?logout")
+                    .permitAll()
+            );
 
     return http.build();
   }
