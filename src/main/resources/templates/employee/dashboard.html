@@ -1,60 +1,349 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<head th:replace="~{fragments/layout :: head('My Workspace')}"></head>
 <body>
 <div th:replace="~{fragments/layout :: sidebar}"></div>
 
-<main class="main-content">
-    <div class="page-header mb-4">
-        <h1 class="h3 fw-bold mb-1">Employee Dashboard</h1>
-        <p class="text-secondary mb-0">Welcome back, <span th:text="${currentUser.fullName != null ? currentUser.fullName : currentUser.username}">User</span></p>
-    </div>
+<main class="main-content enterprise-portal">
+    <!-- 1. HEADER & GLOBAL SEARCH -->
+    <header class="portal-header">
+        <div class="header-text">
+            <h1 class="portal-title" th:text="'Good ' + ${timeOfDay} + ', ' + ${currentUser.firstName}">Good morning, John</h1>
+            <p class="portal-subtitle">Manage your assigned assets, access, and IT support.</p>
+        </div>
+        <div class="header-actions">
+            <button class="cmd-k-btn" data-bs-toggle="modal" data-bs-target="#cmdKModal" aria-label="Quick Search">
+                <i class="bi bi-search"></i>
+                <span>Search assets, tickets...</span>
+                <kbd>⌘K</kbd>
+            </button>
+        </div>
+    </header>
 
-    <div class="row g-4">
-        <!-- Quick Action: Create Ticket -->
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <i class="bi bi-plus-circle fs-1 text-primary mb-3"></i>
-                    <h5 class="fw-bold">Create Ticket</h5>
-                    <p class="text-secondary small">Report an issue or request IT support.</p>
-                    <a href="/tickets/new" class="btn btn-primary w-100">New Ticket</a>
+    <!-- 2. BENTO GRID LAYOUT -->
+    <div class="bento-grid">
+        
+        <!-- CARD A: PRIMARY ASSET (The Hero Card) -->
+        <div class="bento-card span-2 asset-hero-card" th:if="${primaryAsset != null}">
+            <div class="card-header-row">
+                <span class="badge bg-success-subtle text-success-emphasis rounded-pill">
+                    <i class="bi bi-check-circle-fill me-1"></i> Active & Insured
+                </span>
+                <button class="btn-icon" aria-label="More options"><i class="bi bi-three-dots"></i></button>
+            </div>
+            
+            <div class="asset-content">
+                <div class="asset-info">
+                    <h2 class="asset-name" th:text="${primaryAsset.name}">MacBook Pro 16"</h2>
+                    <p class="asset-tag" th:text="${primaryAsset.assetTag}">AST-000125</p>
+                    
+                    <div class="asset-meta-grid">
+                        <div class="meta-item">
+                            <span class="meta-label">Serial Number</span>
+                            <span class="meta-value font-monospace" th:text="${primaryAsset.serialNumber}">C02X12345</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Warranty Expires</span>
+                            <span class="meta-value text-warning" th:text="${#temporals.format(primaryAsset.warrantyEndDate, 'MMM yyyy')}">Aug 2027</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="asset-visual">
+                    <!-- Premium SVG Illustration or QR Code -->
+                    <div class="qr-glassmorphism">
+                        <img th:src="@{/api/assets/{id}/qr(id=${primaryAsset.id})}" alt="Asset QR" class="qr-code-img">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer-row">
+                <button class="btn btn-outline-primary btn-sm" onclick="openQrScanner()">
+                    <i class="bi bi-qr-code-scan me-1"></i> Scan / Verify
+                </button>
+                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#reportIssueModal">
+                    <i class="bi bi-exclamation-triangle me-1"></i> Report Issue
+                </button>
+            </div>
+        </div>
+
+        <!-- CARD B: QUICK STATS -->
+        <div class="bento-card stat-card">
+            <div class="stat-icon bg-info-subtle text-info">
+                <i class="bi bi-hdd-network"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-value" th:text="${nasAccessCount}">3</h3>
+                <p class="stat-label">Active NAS Folders</p>
+            </div>
+            <a href="/itams/access" class="card-link">View Access <i class="bi bi-arrow-right"></i></a>
+        </div>
+
+        <!-- CARD C: PENDING ACTIONS (Phase 10 Integration) -->
+        <div class="bento-card action-card" th:classappend="${pendingAcceptances > 0} ? 'pulse-warning' : ''">
+            <div class="stat-icon bg-warning-subtle text-warning">
+                <i class="bi bi-pen-fill"></i>
+            </div>
+            <div class="stat-info">
+                <h3 class="stat-value" th:text="${pendingAcceptances}">1</h3>
+                <p class="stat-label">Pending Acceptances</p>
+            </div>
+            <button class="btn btn-primary btn-sm w-100 mt-3" th:if="${pendingAcceptances > 0}" data-bs-toggle="modal" data-bs-target="#signatureModal">
+                Sign & Accept
+            </button>
+        </div>
+
+        <!-- CARD D: RECENT IT ACTIVITY (Timeline) -->
+        <div class="bento-card span-3 activity-card">
+            <div class="card-header-row">
+                <h3 class="card-title">Recent IT Activity</h3>
+                <a href="/notifications/history" class="text-secondary small">View All</a>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item" th:each="log : ${recentActivity}">
+                    <div class="timeline-marker" th:classappend="${log.type == 'TICKET'} ? 'bg-primary' : 'bg-success'"></div>
+                    <div class="timeline-content">
+                        <p class="timeline-text" th:utext="${log.message}">Ticket <strong>#1042</strong> was resolved by IT Support.</p>
+                        <span class="timeline-time" th:text="${#temporals.format(log.timestamp, 'dd MMM, HH:mm')}">2 hours ago</span>
+                    </div>
+                </div>
+                <!-- Empty State -->
+                <div th:if="${#lists.isEmpty(recentActivity)}" class="empty-state-inline">
+                    <i class="bi bi-check-circle text-success fs-1"></i>
+                    <p class="text-secondary mt-2">You're all caught up. No recent IT activity.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Quick Action: My Tickets -->
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <i class="bi bi-ticket-detailed fs-1 text-info mb-3"></i>
-                    <h5 class="fw-bold">My Tickets</h5>
-                    <p class="text-secondary small">View and track your support requests.</p>
-                    <a href="/tickets" class="btn btn-outline-info w-100">View Tickets</a>
-                </div>
+        <!-- CARD E: QUICK REQUESTS -->
+        <div class="bento-card span-1 requests-card">
+            <h3 class="card-title mb-3">Quick Requests</h3>
+            <div class="request-list">
+                <a href="/itams/software/new" class="request-item">
+                    <i class="bi bi-box-seam text-primary"></i>
+                    <span>Request Software</span>
+                </a>
+                <a href="/itams/nas/folders" class="request-item">
+                    <i class="bi bi-folder-plus text-success"></i>
+                    <span>Request NAS Access</span>
+                </a>
+                <a href="/tickets/new" class="request-item">
+                    <i class="bi bi-plus-circle text-danger"></i>
+                    <span>Open IT Ticket</span>
+                </a>
             </div>
-        </div>
-
-        <!-- Quick Action: My Assets -->
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body text-center p-4">
-                    <i class="bi bi-laptop fs-1 text-success mb-3"></i>
-                    <h5 class="fw-bold">My Assets</h5>
-                    <p class="text-secondary small">View equipment assigned to you.</p>
-                    <a href="/employee/assets" class="btn btn-outline-success w-100">View Assets</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Placeholder for future widgets -->
-    <div class="mt-4">
-        <div class="alert alert-info border-0 shadow-sm">
-            <i class="bi bi-info-circle me-2"></i>
-            <strong>Coming Soon:</strong> Detailed tables for your active tickets, assigned assets, and software licenses will appear here.
         </div>
     </div>
 </main>
+
+<!-- Phase 10 Digital Signature Modal (Reused from your KB) -->
+<div class="modal fade" id="signatureModal" tabindex="-1" aria-hidden="true">
+    <!-- ... Insert your existing signature pad modal code here ... -->
+</div>
+
+<!-- Enterprise CSS Injection -->
+<style th:fragment="employee-portal-styles">
+    /* ==========================================
+       ENTERPRISE BENTO-BOX DESIGN SYSTEM
+       ========================================== */
+    .enterprise-portal {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 2rem;
+        animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .portal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 2.5rem;
+    }
+
+    .portal-title {
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .portal-subtitle {
+        color: var(--text-secondary);
+        font-size: 1rem;
+        margin-top: 0.25rem;
+    }
+
+    /* Cmd+K Search Button */
+    .cmd-k-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 1rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        box-shadow: var(--shadow-sm);
+    }
+    .cmd-k-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+    .cmd-k-btn kbd {
+        background: var(--bg-sidebar-hover);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+    }
+
+    /* Bento Grid Layout */
+    .bento-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+    }
+
+    .bento-card {
+        background: var(--bg-surface);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .bento-card:hover {
+        border-color: rgba(37, 99, 235, 0.3);
+        box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.08);
+        transform: translateY(-4px);
+    }
+
+    .span-2 { grid-column: span 2; }
+    .span-3 { grid-column: span 3; }
+
+    /* Hero Asset Card */
+    .asset-hero-card {
+        background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(37, 99, 235, 0.02) 100%);
+    }
+    .asset-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-grow: 1;
+        margin: 1.5rem 0;
+    }
+    .asset-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .asset-tag { font-family: var(--font-mono); color: var(--text-secondary); font-size: 0.875rem; }
+    
+    .asset-meta-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    .meta-label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.25rem; }
+    .meta-value { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+
+    .qr-glassmorphism {
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        border-radius: 16px;
+        padding: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+    .qr-code-img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* Stat & Action Cards */
+    .stat-card, .action-card { justify-content: space-between; }
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        margin-bottom: 1rem;
+    }
+    .stat-value { font-size: 2rem; font-weight: 700; line-height: 1; margin: 0; }
+    .stat-label { color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.25rem; }
+    .card-link { font-size: 0.875rem; font-weight: 500; color: var(--accent-primary); margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+    /* Activity Timeline */
+    .card-title { font-size: 1rem; font-weight: 600; margin: 0; }
+    .timeline { margin-top: 1.5rem; flex-grow: 1; overflow-y: auto; max-height: 300px; }
+    .timeline-item { display: flex; gap: 1rem; padding-bottom: 1.5rem; position: relative; }
+    .timeline-item:not(:last-child)::before {
+        content: '';
+        position: absolute;
+        left: 5px;
+        top: 12px;
+        bottom: 0;
+        width: 2px;
+        background: var(--border-color);
+    }
+    .timeline-marker {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        margin-top: 4px;
+        z-index: 1;
+    }
+    .timeline-text { margin: 0; font-size: 0.9rem; color: var(--text-primary); }
+    .timeline-time { font-size: 0.75rem; color: var(--text-secondary); }
+
+    /* Quick Requests */
+    .request-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
+    .request-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem;
+        border-radius: 10px;
+        text-decoration: none;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: background 0.2s;
+    }
+    .request-item:hover { background: var(--bg-sidebar-hover); }
+
+    /* Animations */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .pulse-warning {
+        animation: pulseBorder 2s infinite;
+    }
+    @keyframes pulseBorder {
+        0% { border-color: var(--border-color); }
+        50% { border-color: var(--warning); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
+        100% { border-color: var(--border-color); }
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 1024px) {
+        .bento-grid { grid-template-columns: repeat(2, 1fr); }
+        .span-3 { grid-column: span 2; }
+    }
+    @media (max-width: 768px) {
+        .enterprise-portal { padding: 1rem; }
+        .bento-grid { grid-template-columns: 1fr; }
+        .span-2, .span-3 { grid-column: span 1; }
+        .asset-content { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+        .portal-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    }
+</style>
 </body>
 </html>

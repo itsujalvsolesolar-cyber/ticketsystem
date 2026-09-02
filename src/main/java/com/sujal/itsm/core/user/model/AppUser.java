@@ -1,268 +1,153 @@
 package com.sujal.itsm.core.user.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.sujal.itsm.itams.model.Employee;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import com.sujal.itsm.core.enums.IdentityType;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(
-    name = "app_users",
-    indexes = {
-      @Index(name = "idx_user_username", columnList = "username"),
-      @Index(name = "idx_user_email", columnList = "email"),
-      @Index(name = "idx_user_employee_id", columnList = "employeeId"),
-      @Index(name = "idx_user_department", columnList = "department_id"),
-      @Index(name = "idx_user_active", columnList = "isActive")
-    })
-@Data
+@Table(name = "app_users", indexes = {
+    @Index(name = "idx_user_email", columnList = "email"),
+    @Index(name = "idx_user_username", columnList = "username")
+})
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@ToString(exclude = {"roles", "employee", "password", "department"})
+@EqualsAndHashCode(of = "id")
 public class AppUser {
 
-  // ============================================
-  // IDENTITY & AUTHENTICATION
-  // ============================================
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-  @NotBlank(message = "Username is required")
-  @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
-  @Pattern(regexp = "^[a-zA-Z0-9._-]+$", message = "Username can only contain letters, numbers, dots, hyphens, and underscores")
-  @Column(unique = true, nullable = false, length = 50)
-  private String username;
+    @Column(nullable = false, unique = true, length = 64)
+    private String username;
 
-  @NotBlank(message = "Password is required")
-  @Size(min = 8, max = 100, message = "Password must be between 8 and 100 characters")
-  @Column(nullable = false, length = 255)
-  private String password;
+    @Column(nullable = false, length = 255)
+    @JsonIgnore
+    private String password;
 
-  @Email(message = "Please provide a valid email address")
-  @NotBlank(message = "Email is required")
-  @Size(max = 100)
-  @Column(unique = true, nullable = false, length = 100)
-  private String email;
+    @Column(nullable = false, unique = true, length = 128)
+    private String email;
 
-  // ============================================
-  // PROFILE INFORMATION
-  // ============================================
-  @Size(max = 100, message = "Full name must be less than 100 characters")
-  @Column(length = 100)
-  private String fullName;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "identity_type", nullable = false, length = 32)
+    @Builder.Default
+    private IdentityType identityType = IdentityType.HUMAN;
 
-  @Size(max = 50)
-  @Column(name = "first_name", length = 50)
-  private String firstName;
+    @Column(name = "first_name", length = 64)
+    private String firstName;
 
-  @Size(max = 50)
-  @Column(name = "last_name", length = 50)
-  private String lastName;
+    @Column(name = "last_name", length = 64)
+    private String lastName;
 
-  @Pattern(regexp = "^\\+?[0-9]{10,15}$", message = "Invalid phone number format")
-  @Size(max = 20)
-  @Column(length = 20)
-  private String phoneNumber;
+    @Column(name = "full_name", length = 128)
+    private String fullName;
 
-  @Size(max = 500)
-  @Column(length = 500)
-  private String bio;
+    @Column(name = "is_active", nullable = false)
+    @Builder.Default
+    private boolean isActive = true;
 
-  @Size(max = 255)
-  @Column(name = "profile_picture_url", length = 255)
-  private String profilePictureUrl;
+    @Column(name = "is_email_verified", nullable = false)
+    @Builder.Default
+    private boolean isEmailVerified = true;
 
-  // ============================================
-  // ROLES & PERMISSIONS (DYNAMIC RBAC)
-  // ============================================
-  @ManyToMany(fetch = FetchType.EAGER)
-  @JoinTable(
-      name = "user_roles",
-      joinColumns = @JoinColumn(name = "user_id"),
-      inverseJoinColumns = @JoinColumn(name = "role_id")
-  )
-  @Builder.Default
-  private Set<Role> roles = new HashSet<>();
+    @Column(name = "account_non_locked", nullable = false)
+    @Builder.Default
+    private boolean accountNonLocked = true;
 
-  // ============================================
-  // ORGANIZATIONAL INFORMATION
-  // ============================================
-  @Size(max = 50)
-  @Column(name = "employee_id", unique = true, length = 50)
-  private String employeeId;
+    @Column(name = "two_factor_enabled", nullable = false)
+    @Builder.Default
+    private boolean twoFactorEnabled = false;
 
-  @Size(max = 100)
-  @Column(length = 100)
-  private String designation;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id")
+    private Department department;
 
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "department_id")
-  private Department department;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
 
-  @ManyToOne(fetch = FetchType.EAGER)
-  @JoinColumn(name = "manager_id")
-  private AppUser manager;
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Employee employee;
 
-  @Column(name = "date_of_joining")
-  private LocalDateTime dateOfJoining;
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
-  @Size(max = 50)
-  @Column(name = "employee_type", length = 50)
-  private String employeeType;
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
-  // ============================================
-  // SECURITY & ACCOUNT STATUS
-  // ============================================
-  @Builder.Default
-  @Column(name = "is_active", nullable = false)
-  private boolean isActive = true;
-
-  @Builder.Default
-  @Column(name = "is_account_locked", nullable = false)
-  private boolean isAccountLocked = false;
-
-  @Builder.Default
-  @Column(name = "is_email_verified", nullable = false)
-  private boolean isEmailVerified = false;
-
-  @Column(name = "failed_login_attempts")
-  @Builder.Default
-  private Integer failedLoginAttempts = 0;
-
-  @Column(name = "last_login_date")
-  private LocalDateTime lastLoginDate;
-
-  @Column(name = "last_password_change_date")
-  private LocalDateTime lastPasswordChangeDate;
-
-  @Column(name = "account_lockout_until")
-  private LocalDateTime accountLockoutUntil;
-
-  @Size(max = 255)
-  @Column(name = "password_reset_token", length = 255)
-  private String passwordResetToken;
-
-  @Column(name = "password_reset_token_expiry")
-  private LocalDateTime passwordResetTokenExpiry;
-
-  @Builder.Default
-  @Column(name = "two_factor_enabled", nullable = false)
-  private boolean twoFactorEnabled = false;
-
-  // ============================================
-  // PREFERENCES & SETTINGS
-  // ============================================
-  @Size(max = 10)
-  @Column(name = "preferred_language", length = 10)
-  @Builder.Default
-  private String preferredLanguage = "en";
-
-  @Size(max = 50)
-  @Column(name = "timezone", length = 50)
-  @Builder.Default
-  private String timezone = "Asia/Kolkata";
-
-  @Size(max = 20)
-  @Column(name = "theme", length = 20)
-  @Builder.Default
-  private String theme = "light";
-
-  @Column(name = "email_notifications_enabled")
-  @Builder.Default
-  private boolean emailNotificationsEnabled = true;
-
-  // ============================================
-  // AUDIT FIELDS
-  // ============================================
-  @CreationTimestamp
-  @Column(name = "created_at", nullable = false, updatable = false)
-  private LocalDateTime createdAt;
-
-  @UpdateTimestamp
-  @Column(name = "updated_at")
-  private LocalDateTime updatedAt;
-
-  @Column(name = "created_by")
-  private Long createdBy;
-
-  @Column(name = "updated_by")
-  private Long updatedBy;
-
-  // ============================================
-  // HELPER METHODS (REFACTORED FOR DYNAMIC RBAC)
-  // ============================================
-  public boolean hasRole(String roleName) {
-      return roles.stream().anyMatch(r -> r.getName().equalsIgnoreCase(roleName));
-  }
-
-  public boolean hasAuthority(String permissionCode) {
-      return roles.stream()
-              .flatMap(r -> r.getPermissions().stream())
-              .anyMatch(p -> p.getCode().equals(permissionCode));
-  }
-
-  public boolean isAdmin() {
-      return hasRole("SUPER ADMIN") || hasRole("ADMIN");
-  }
-
-  // Refactored to use dynamic string matching instead of legacy Enum
-  public boolean isManager() {
-      return hasRole("MANAGER") || hasRole("DEPARTMENT HEAD");
-  }
-
-  public boolean isAgent() {
-      return hasRole("AGENT") || hasRole("IT EXECUTIVE") || hasRole("HR EXECUTIVE");
-  }
-
-  public boolean isAccountCurrentlyLocked() {
-    if (!isAccountLocked) return false;
-    if (accountLockoutUntil == null) return true;
-    return LocalDateTime.now().isBefore(accountLockoutUntil);
-  }
-
-  public void incrementFailedLoginAttempts() {
-    this.failedLoginAttempts = (this.failedLoginAttempts == null) ? 1 : this.failedLoginAttempts + 1;
-    if (this.failedLoginAttempts >= 5) {
-      this.isAccountLocked = true;
-      this.accountLockoutUntil = LocalDateTime.now().plusMinutes(30);
+    public String getFullName() {
+        if (this.fullName != null && !this.fullName.isBlank()) {
+            return this.fullName;
+        }
+        if (this.firstName != null || this.lastName != null) {
+            return ((this.firstName != null ? this.firstName : "") + " " + (this.lastName != null ? this.lastName : "")).trim();
+        }
+        return this.username;
     }
-  }
 
-  public void resetFailedLoginAttempts() {
-    this.failedLoginAttempts = 0;
-    this.lastLoginDate = LocalDateTime.now();
-    this.isAccountLocked = false;
-    this.accountLockoutUntil = null;
-  }
-
-  public boolean isPasswordResetTokenValid() {
-    return passwordResetToken != null && passwordResetTokenExpiry != null && LocalDateTime.now().isBefore(passwordResetTokenExpiry);
-  }
-
-  public String getDisplayName() {
-    if (fullName != null && !fullName.trim().isEmpty()) return fullName;
-    if (firstName != null && lastName != null) return firstName + " " + lastName;
-    return username;
-  }
-
-  public String getInitials() {
-    if (firstName != null && lastName != null) {
-      return (firstName.charAt(0) + "" + lastName.charAt(0)).toUpperCase();
+    public boolean isEnabled() {
+        return this.isActive;
     }
-    if (fullName != null && fullName.length() >= 2) {
-      String[] parts = fullName.split(" ");
-      if (parts.length >= 2) return (parts[0].charAt(0) + "" + parts[1].charAt(0)).toUpperCase();
-      return fullName.substring(0, 2).toUpperCase();
+
+    public void setEnabled(boolean enabled) {
+        this.isActive = enabled;
     }
-    return username.substring(0, Math.min(2, username.length())).toUpperCase();
-  }
+
+    public boolean isAdmin() {
+        return hasRole("ADMIN") || hasRole("ROLE_ADMIN");
+    }
+
+    public boolean hasRole(String roleName) {
+        if (roles == null) return false;
+        // Normalize: uppercase, spaces -> underscores, strip ROLE_ prefix
+        String normalized = roleName.toUpperCase().replace(" ", "_").replace("ROLE_", "");
+        return roles.stream().anyMatch(r -> {
+            String name = r.getName().toUpperCase().replace(" ", "_").replace("ROLE_", "");
+            return name.equals(normalized);
+        });
+    }
+
+    public boolean hasAnyRole(String... roleNames) {
+        for (String roleName : roleNames) {
+            if (hasRole(roleName)) return true;
+        }
+        return false;
+    }
+
+    /** IT staff = can see IT Assets, Workflow Builder, etc. */
+    public boolean isItStaff() {
+        return hasAnyRole("SUPER_ADMIN", "ADMIN", "IT_MANAGER", "IT_EXECUTIVE", "STAFF");
+    }
+    
+    /** Admin level = can see Administration / Users & Roles */
+    public boolean isAdminLevel() {
+        return hasAnyRole("SUPER_ADMIN", "ADMIN", "IT_MANAGER");
+    }
+
+    public void linkEmployee(Employee emp) {
+        this.employee = emp;
+        if (emp != null && emp.getUser() != this) {
+            emp.setUser(this);
+        }
+    }
 }

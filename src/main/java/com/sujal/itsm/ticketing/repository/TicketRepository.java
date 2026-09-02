@@ -22,6 +22,12 @@ import com.sujal.itsm.ticketing.model.Ticket;
 public interface TicketRepository
     extends JpaRepository<Ticket, Long>, JpaSpecificationExecutor<Ticket> {
 
+    /**
+     * Finds all tickets where the user is either the requester or the assigned agent.
+     */
+    @Query("SELECT t FROM Ticket t WHERE t.requesterName = :username OR t.assignedTo.username = :username ORDER BY t.createdAt DESC")
+    List<Ticket> findTicketsByUsername(@Param("username") String username);
+
   // =========================================================
   // Basic Lookups
   // =========================================================
@@ -152,5 +158,17 @@ public interface TicketRepository
   // ✅ Gets all deleted tickets for the "Recycle Bin" UI
   @Query(value = "SELECT * FROM tickets WHERE is_deleted = true ORDER BY deleted_at DESC", nativeQuery = true)
   List<Ticket> findAllDeleted();
+
+    // Finds tickets currently assigned to the logged-in employee
+    @Query("SELECT t FROM Ticket t WHERE t.assignedTo.id = :userId ORDER BY t.createdAt DESC")
+    List<Ticket> findMyAssignedTickets(@Param("userId") Long userId);
+
+    // Finds tickets where the employee's name was typed into the requester field
+    @Query("SELECT t FROM Ticket t WHERE t.requesterName = :name ORDER BY t.createdAt DESC")
+    List<Ticket> findByRequesterName(@Param("name") String name);
+
+    // Add this method inside the TicketRepository interface:
+    @Query("SELECT t FROM Ticket t WHERE t.requesterName = :username OR t.requesterName = :fullName ORDER BY t.createdAt DESC")
+    List<Ticket> findByUsernameOrFullName(@Param("username") String username, @Param("fullName") String fullName);
 
 }

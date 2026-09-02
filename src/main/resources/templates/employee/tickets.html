@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My Support Tickets')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+<main class="main-content enterprise-workspace">
+    
+    <header class="workspace-header mb-5">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+                <h1 class="h2 fw-bold tracking-tight mb-1">My Support Tickets</h1>
+                <p class="text-secondary fs-5 mb-0">Track your IT requests and resolutions.</p>
+            </div>
+            <a href="/tickets/new" class="btn btn-primary d-flex align-items-center gap-2">
+                <i class="bi bi-plus-lg"></i> New Request
+            </a>
+        </div>
+    </header>
+
+    <div class="enterprise-card">
+        <div class="card-header-custom">
+            <h5 class="fw-semibold mb-0">Ticket History</h5>
+            <span class="badge bg-primary-subtle text-primary-emphasis" th:text="${openCount} + ' Active'">0 Active</span>
+        </div>
+        <div class="card-body-custom p-0">
+            <div th:if="${#lists.isEmpty(tickets)}" class="empty-state">
+                <i class="bi bi-ticket-perforated fs-1 text-muted mb-3"></i>
+                <h6 class="fw-semibold">No tickets found</h6>
+                <p class="text-muted small mb-3">You haven't submitted any IT requests yet.</p>
+                <a href="/tickets/new" class="btn btn-outline-primary">Create your first ticket</a>
+            </div>
+            
+            <div th:unless="${#lists.isEmpty(tickets)}" class="table-responsive">
+                <table class="table enterprise-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Last Updated</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="ticket : ${tickets}">
+                            <td><code class="text-muted" th:text="'#' + ${ticket.id}"></code></td>
+                            <td>
+                                <div class="fw-semibold text-dark" th:text="${ticket.title}">Issue Title</div>
+                                <div class="text-muted small" th:text="${ticket.category != null ? ticket.category.name : 'General'}">Category</div>
+                            </td>
+                            <td>
+                                <span class="status-pill" 
+                                      th:classappend="${ticket.status.name() == 'OPEN' ? 'status-pill-warning' : (ticket.status.name() == 'RESOLVED' ? 'status-pill-success' : 'status-pill-secondary')}" 
+                                      th:text="${ticket.status.displayName}">Open</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border" th:text="${ticket.priority.displayName}">Medium</span>
+                            </td>
+                            <td class="text-muted small" th:text="${#temporals.format(ticket.updatedAt, 'MMM dd, HH:mm')}">Date</td>
+                            <td class="text-end">
+                                <a th:href="@{/tickets/{id}(id=${ticket.id})}" class="btn btn-sm btn-outline-secondary">View</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>

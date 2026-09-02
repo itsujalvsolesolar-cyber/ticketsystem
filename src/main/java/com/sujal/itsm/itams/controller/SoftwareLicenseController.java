@@ -21,7 +21,7 @@ public class SoftwareLicenseController {
 
     private final SoftwareLicenseService licenseService;
     private final EmployeeService employeeService;
-    private final SoftwareCatalogService catalogService; // ✅ MUST BE HERE
+    private final SoftwareCatalogService catalogService; 
 
     @GetMapping
     public String index(Model model) {
@@ -32,7 +32,6 @@ public class SoftwareLicenseController {
 
     @GetMapping("/new")
     public String showForm(Model model) {
-        // ✅ These two lines fetch the data for the dropdowns
         List<Employee> employees = employeeService.findAllActive();
         List<SoftwareCatalog> catalogs = catalogService.findAllActive(); 
         
@@ -49,7 +48,10 @@ public class SoftwareLicenseController {
                          @RequestParam Long catalogId, 
                          RedirectAttributes redirectAttributes) {
         
-        Employee employee = employeeService.findById(employeeId);
+        // FIX: Fetch the target employee and software catalog using the IDs submitted from the form
+        Employee employee = employeeService.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + employeeId));
+                
         SoftwareCatalog catalog = catalogService.findById(catalogId); 
         
         license.setEmployee(employee);

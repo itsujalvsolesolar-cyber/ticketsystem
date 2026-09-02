@@ -34,6 +34,9 @@ public class DataSeeder {
   @Value("${app.seeding.enabled:true}")
   private boolean seedingEnabled;
 
+  @Value("${app.seeding.force-password-reset:false}")
+  private boolean forcePasswordReset;
+
   @Value("${app.seeding.admin.password:admin123}")
   private String defaultAdminPassword;
 
@@ -93,6 +96,77 @@ public class DataSeeder {
       }
     };
   }
+
+   // ============================================
+    // ONE-TIME PASSWORD REPAIR
+    // ============================================
+    @Bean
+    public CommandLineRunner syncDefaultPasswords(
+            AppUserRepository userRepository,
+            PasswordEncoder encoder) {
+
+        return args -> {
+
+            if (!forcePasswordReset) {
+                return;
+            }
+
+            logger.info(
+                "🔑 Force-syncing default user passwords " +
+                "with valid BCrypt hashes..."
+            );
+
+            syncPassword(
+                userRepository,
+                encoder,
+                "admin",
+                defaultAdminPassword
+            );
+
+            syncPassword(
+                userRepository,
+                encoder,
+                "manager",
+                defaultManagerPassword
+            );
+
+            syncPassword(
+                userRepository,
+                encoder,
+                "sujal",
+                defaultAgentPassword
+            );
+
+            logger.info(
+                "✅ Password repair complete. " +
+                "Set app.seeding.force-password-reset=false when done."
+            );
+        };
+    }
+
+    private void syncPassword(
+            AppUserRepository repo,
+            PasswordEncoder encoder,
+            String username,
+            String rawPassword) {
+
+        repo.findByUsername(username).ifPresent(user -> {
+
+            user.setPassword(encoder.encode(rawPassword));
+            user.setActive(true);
+            user.setAccountNonLocked(true);
+            user.setEmailVerified(true);
+
+            repo.save(user);
+
+            logger.info(
+                "✅ Valid BCrypt hash generated and saved for user '{}'",
+                username
+            );
+        });
+    }
+
+
 
   // ============================================
   // NEW: SEED SYSTEM SETTINGS

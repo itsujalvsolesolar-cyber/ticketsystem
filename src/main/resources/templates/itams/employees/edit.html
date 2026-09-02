@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Edit Employee')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+<main class="main-content enterprise-workspace">
+    
+    <header class="workspace-header mb-5">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 class="h2 fw-bold tracking-tight mb-1">Edit Employee Profile</h1>
+                <p class="text-secondary fs-5 mb-0">Update organizational details for <span th:text="${employee.fullName}" class="fw-semibold text-primary"></span>.</p>
+            </div>
+            <a href="/itams/employees" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Back to Directory
+            </a>
+        </div>
+    </header>
+
+    <!-- Global Error Alert -->
+    <div th:if="${error}" class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div th:text="${error}">Error message</div>
+    </div>
+
+    <!-- Main Edit Form -->
+    <form th:action="@{/itams/employees/{id}(id=${employee.id})}" th:object="${employee}" method="post" class="needs-validation" novalidate>
+        <div class="row g-4">
+            
+            <!-- LEFT COLUMN: HR Details -->
+            <div class="col-lg-8">
+                <div class="enterprise-card mb-4">
+                    <div class="card-header-custom">
+                        <h5 class="fw-semibold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Employment Details</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{firstName}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{lastName}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company Email</label>
+                                <input type="email" th:field="*{email}" class="form-control" readonly>
+                                <div class="form-text">Managed via IT Provisioning.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" th:field="*{phone}" class="form-control" placeholder="+91 98765 43210">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Department <span class="text-danger">*</span></label>
+                                <!-- Using name="department.id" bypasses Spring Converter issues -->
+                                <select name="department.id" class="form-select" required>
+                                    <option value="" disabled>Select Department...</option>
+                                    <option th:each="dept : ${departments}" 
+                                            th:value="${dept.id}" 
+                                            th:text="${dept.name}" 
+                                            th:selected="${employee.department != null and employee.department.id == dept.id}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Job Title</label>
+                                <input type="text" th:field="*{jobTitle}" class="form-control" placeholder="e.g. Software Engineer">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Joining</label>
+                                <input type="date" th:field="*{dateOfJoining}" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Account Status -->
+            <div class="col-lg-4">
+                <div class="enterprise-card mb-4 border-primary-subtle">
+                    <div class="card-header-custom bg-primary-subtle">
+                        <h5 class="fw-semibold mb-0 text-primary"><i class="bi bi-shield-lock me-2"></i>Account Status</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="mb-3">
+                            <label class="form-label">Employee Code</label>
+                            <input type="text" th:value="${employee.employeeCode}" class="form-control font-monospace" readonly>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">System Username</label>
+                            <input type="text" th:value="${employee.user != null ? employee.user.username : 'N/A'}" class="form-control" readonly>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" th:field="*{active}" id="activeSwitch">
+                            <label class="form-check-label" for="activeSwitch">Active Employee</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>Save Changes</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Separate Deactivate Form (Cannot be nested inside the main form) -->
+                <form th:action="@{/itams/employees/{id}/delete(id=${employee.id})}" method="post" onsubmit="return confirm('Are you sure you want to deactivate this employee and revoke their IT access?');">
+                    <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                        <i class="bi bi-person-x"></i> Deactivate Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </form>
+</main>
+</body>
+</html><!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Edit Employee')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+<main class="main-content enterprise-workspace">
+    
+    <header class="workspace-header mb-5">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 class="h2 fw-bold tracking-tight mb-1">Edit Employee Profile</h1>
+                <p class="text-secondary fs-5 mb-0">Update organizational details for <span th:text="${employee.fullName}" class="fw-semibold text-primary"></span>.</p>
+            </div>
+            <a href="/itams/employees" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Back to Directory
+            </a>
+        </div>
+    </header>
+
+    <!-- Global Error Alert -->
+    <div th:if="${error}" class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div th:text="${error}">Error message</div>
+    </div>
+
+    <!-- Main Edit Form -->
+    <form th:action="@{/itams/employees/{id}(id=${employee.id})}" th:object="${employee}" method="post" class="needs-validation" novalidate>
+        <div class="row g-4">
+            
+            <!-- LEFT COLUMN: HR Details -->
+            <div class="col-lg-8">
+                <div class="enterprise-card mb-4">
+                    <div class="card-header-custom">
+                        <h5 class="fw-semibold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Employment Details</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{firstName}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{lastName}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company Email</label>
+                                <input type="email" th:field="*{email}" class="form-control" readonly>
+                                <div class="form-text">Managed via IT Provisioning.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" th:field="*{phone}" class="form-control" placeholder="+91 98765 43210">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Department <span class="text-danger">*</span></label>
+                                <!-- Using name="department.id" bypasses Spring Converter issues -->
+                                <select name="department.id" class="form-select" required>
+                                    <option value="" disabled>Select Department...</option>
+                                    <option th:each="dept : ${departments}" 
+                                            th:value="${dept.id}" 
+                                            th:text="${dept.name}" 
+                                            th:selected="${employee.department != null and employee.department.id == dept.id}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Job Title</label>
+                                <input type="text" th:field="*{jobTitle}" class="form-control" placeholder="e.g. Software Engineer">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Joining</label>
+                                <input type="date" th:field="*{dateOfJoining}" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Account Status -->
+            <div class="col-lg-4">
+                <div class="enterprise-card mb-4 border-primary-subtle">
+                    <div class="card-header-custom bg-primary-subtle">
+                        <h5 class="fw-semibold mb-0 text-primary"><i class="bi bi-shield-lock me-2"></i>Account Status</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="mb-3">
+                            <label class="form-label">Employee Code</label>
+                            <input type="text" th:value="${employee.employeeCode}" class="form-control font-monospace" readonly>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">System Username</label>
+                            <input type="text" th:value="${employee.user != null ? employee.user.username : 'N/A'}" class="form-control" readonly>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" th:field="*{active}" id="activeSwitch">
+                            <label class="form-check-label" for="activeSwitch">Active Employee</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>Save Changes</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Separate Deactivate Form (Cannot be nested inside the main form) -->
+                <form th:action="@{/itams/employees/{id}/delete(id=${employee.id})}" method="post" onsubmit="return confirm('Are you sure you want to deactivate this employee and revoke their IT access?');">
+                    <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                        <i class="bi bi-person-x"></i> Deactivate Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </form>
+</main>
+</body>
+</html><!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Edit Employee')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+<main class="main-content enterprise-workspace">
+    
+    <header class="workspace-header mb-5">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 class="h2 fw-bold tracking-tight mb-1">Edit Employee Profile</h1>
+                <p class="text-secondary fs-5 mb-0">Update organizational details for <span th:text="${employee.fullName}" class="fw-semibold text-primary"></span>.</p>
+            </div>
+            <a href="/itams/employees" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Back to Directory
+            </a>
+        </div>
+    </header>
+
+    <!-- Global Error Alert -->
+    <div th:if="${error}" class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div th:text="${error}">Error message</div>
+    </div>
+
+    <!-- Main Edit Form -->
+    <form th:action="@{/itams/employees/{id}(id=${employee.id})}" th:object="${employee}" method="post" class="needs-validation" novalidate>
+        <div class="row g-4">
+            
+            <!-- LEFT COLUMN: HR Details -->
+            <div class="col-lg-8">
+                <div class="enterprise-card mb-4">
+                    <div class="card-header-custom">
+                        <h5 class="fw-semibold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Employment Details</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{firstName}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{lastName}" class="form-control" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company Email</label>
+                                <input type="email" th:field="*{email}" class="form-control" readonly>
+                                <div class="form-text">Managed via IT Provisioning.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" th:field="*{phone}" class="form-control" placeholder="+91 98765 43210">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Department <span class="text-danger">*</span></label>
+                                <!-- Using name="department.id" bypasses Spring Converter issues -->
+                                <select name="department.id" class="form-select" required>
+                                    <option value="" disabled>Select Department...</option>
+                                    <option th:each="dept : ${departments}" 
+                                            th:value="${dept.id}" 
+                                            th:text="${dept.name}" 
+                                            th:selected="${employee.department != null and employee.department.id == dept.id}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Job Title</label>
+                                <input type="text" th:field="*{jobTitle}" class="form-control" placeholder="e.g. Software Engineer">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Joining</label>
+                                <input type="date" th:field="*{dateOfJoining}" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT COLUMN: Account Status -->
+            <div class="col-lg-4">
+                <div class="enterprise-card mb-4 border-primary-subtle">
+                    <div class="card-header-custom bg-primary-subtle">
+                        <h5 class="fw-semibold mb-0 text-primary"><i class="bi bi-shield-lock me-2"></i>Account Status</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <div class="mb-3">
+                            <label class="form-label">Employee Code</label>
+                            <input type="text" th:value="${employee.employeeCode}" class="form-control font-monospace" readonly>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">System Username</label>
+                            <input type="text" th:value="${employee.user != null ? employee.user.username : 'N/A'}" class="form-control" readonly>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" th:field="*{active}" id="activeSwitch">
+                            <label class="form-check-label" for="activeSwitch">Active Employee</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                            <i class="bi bi-check-circle-fill"></i>
+                            <span>Save Changes</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Separate Deactivate Form (Cannot be nested inside the main form) -->
+                <form th:action="@{/itams/employees/{id}/delete(id=${employee.id})}" method="post" onsubmit="return confirm('Are you sure you want to deactivate this employee and revoke their IT access?');">
+                    <button type="submit" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                        <i class="bi bi-person-x"></i> Deactivate Account
+                    </button>
+                </form>
+            </div>
+        </div>
+    </form>
+</main>
+</body>
+</html>

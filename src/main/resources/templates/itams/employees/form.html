@@ -1,50 +1,143 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<head th:replace="~{fragments/layout :: head('Onboard Employee')}"></head>
 <body>
 <div th:replace="~{fragments/layout :: sidebar}"></div>
-<main class="main-content">
-    <div class="page-header mb-4">
-        <h1 class="h3 fw-bold" th:text="${pageTitle}">Employee Form</h1>
+<main class="main-content enterprise-workspace">
+    
+    <header class="workspace-header mb-5">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+            <div>
+                <h1 class="h2 fw-bold tracking-tight mb-1">Onboard New Employee</h1>
+                <p class="text-secondary fs-5 mb-0">Create the business profile and provision IT system access in a single step.</p>
+            </div>
+            <a href="/itams/employees" class="btn btn-outline-secondary d-flex align-items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Back to Directory
+            </a>
+        </div>
+    </header>
+
+    <!-- Global Error Alert -->
+    <div th:if="${error}" class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div th:text="${error}">Error message</div>
     </div>
 
-    <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-            <form th:action="${employee.id != null ? '/itams/employees/' + employee.id : '/itams/employees'}" th:object="${employee}" method="post">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" th:field="*{fullName}" required>
+    <form th:action="@{/itams/employees}" th:object="${dto}" method="post" class="needs-validation" novalidate>
+        <div class="row g-4">
+            
+            <!-- LEFT COLUMN: HR & Identity -->
+            <div class="col-lg-8">
+                <div class="enterprise-card mb-4">
+                    <div class="card-header-custom">
+                        <h5 class="fw-semibold mb-0"><i class="bi bi-person-badge me-2 text-primary"></i>Employment Details</h5>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Employee ID</label>
-                        <input type="text" class="form-control" th:field="*{employeeId}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Email</label>
-                        <input type="email" class="form-control" th:field="*{email}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Phone</label>
-                        <input type="text" class="form-control" th:field="*{phone}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Department</label>
-                        <input type="text" class="form-control" th:field="*{department}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Designation</label>
-                        <input type="text" class="form-control" th:field="*{designation}">
+                    <div class="card-body-custom">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{firstName}" class="form-control" placeholder="e.g. Rahul" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" th:field="*{lastName}" class="form-control" placeholder="e.g. Patel" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Company Email <span class="text-danger">*</span></label>
+                                <input type="email" th:field="*{email}" class="form-control" placeholder="rahul.patel@company.com" required>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Phone Number</label>
+                                <input type="tel" th:field="*{phone}" class="form-control" placeholder="+91 98765 43210">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Department <span class="text-danger">*</span></label>
+                                <select th:field="*{departmentId}" class="form-select" required>
+                                    <option value="" disabled selected>Select Department...</option>
+                                    <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
+                                </select>
+                                <div class="text-danger small mt-1" th:if="${#fields.hasErrors('departmentId')}" th:errors="*{departmentId}"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Job Title</label>
+                                <input type="text" th:field="*{jobTitle}" class="form-control" placeholder="e.g. Software Engineer">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Date of Joining</label>
+                                <input type="date" th:field="*{dateOfJoining}" class="form-control">
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <a href="/itams/employees" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+
+            <!-- RIGHT COLUMN: IT Provisioning -->
+            <div class="col-lg-4">
+                <div class="enterprise-card mb-4 border-primary-subtle">
+                    <div class="card-header-custom bg-primary-subtle">
+                        <h5 class="fw-semibold mb-0 text-primary"><i class="bi bi-shield-lock me-2"></i>IT Provisioning</h5>
+                    </div>
+                    <div class="card-body-custom">
+                        <p class="text-secondary small mb-3">System credentials for the ITSM Employee Portal.</p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Username <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-at"></i></span>
+                                <input type="text" th:field="*{username}" class="form-control" placeholder="rahul.patel" required>
+                            </div>
+                            <div class="text-danger small mt-1" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">Temporary Password <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" th:field="*{temporaryPassword}" class="form-control font-monospace" id="tempPwd" required>
+                                <button type="button" class="btn btn-outline-secondary" onclick="regeneratePassword()" title="Generate New">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" onclick="copyPassword()" title="Copy">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Share this securely with the employee. They will be prompted to change it on first login.</div>
+                        </div>
+
+                        <div class="form-check form-switch mb-4">
+                            <input class="form-check-input" type="checkbox" th:field="*{sendActivationEmail}" id="sendEmailSwitch">
+                            <label class="form-check-label" for="sendEmailSwitch">Send activation email</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-2">
+                            <i class="bi bi-person-plus-fill"></i>
+                            <span>Provision & Create Employee</span>
+                        </button>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
+    </form>
 </main>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    function regeneratePassword() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+        let pwd = "";
+        for (let i = 0; i < 12; i++) {
+            pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        document.getElementById('tempPwd').value = pwd + "Aa1!";
+    }
+
+    function copyPassword() {
+        const pwd = document.getElementById('tempPwd');
+        pwd.select();
+        document.execCommand("copy");
+        // Optional: Show a tiny toast or change icon to checkmark temporarily
+    }
+</script>
 </body>
 </html>

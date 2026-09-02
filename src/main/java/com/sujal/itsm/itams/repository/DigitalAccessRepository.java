@@ -23,4 +23,8 @@ public interface DigitalAccessRepository extends JpaRepository<DigitalAccess, Lo
            "LEFT JOIN FETCH d.assignedBy " +
            "WHERE d.employee = :employee AND d.isActive = true")
     List<DigitalAccess> findByEmployee(@Param("employee") Employee employee);
+
+    long countByEmployee_Id(Long employeeId);
+
+    List<DigitalAccess> findByEmployee_Id(Long employeeId);
 }

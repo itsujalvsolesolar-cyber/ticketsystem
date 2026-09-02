@@ -22,4 +22,11 @@ public interface AssetAllocationRepository extends JpaRepository<AssetAllocation
 
     @Query("SELECT a FROM AssetAllocation a JOIN FETCH a.employee JOIN FETCH a.asset WHERE a.asset = :asset ORDER BY a.allocationDate DESC")
     List<AssetAllocation> findHistoryByAsset(@Param("asset") Asset asset);
+
+    @Query("SELECT a FROM AssetAllocation a JOIN a.employee e JOIN e.user u WHERE u.id = :userId AND a.acceptanceStatus = 'PENDING'")
+    List<AssetAllocation> findPendingByUserId(@Param("userId") Long userId);
+
+    List<AssetAllocation> findByEmployee_Id(Long employeeId);
+
+    List<AssetAllocation> findByAsset_Id(Long assetId);
 }

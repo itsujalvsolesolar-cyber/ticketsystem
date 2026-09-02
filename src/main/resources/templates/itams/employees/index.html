@@ -16,33 +16,46 @@
 
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
-            <table class="table table-hover align-middle mb-0">
-                <thead>
-                <tr>
-                    <th class="ps-4">Name</th>
-                    <th>Employee ID</th>
-                    <th>Department</th>
-                    <th>Designation</th>
-                    <th>Email</th>
-                    <th class="text-end pe-4">Actions</th>
-                </tr>
-                </thead>
-                <tbody>
+            <tbody>
                 <tr th:each="emp : ${employees}">
-                    <td class="ps-4 fw-semibold" th:text="${emp.fullName}"></td>
-                    <td th:text="${emp.employeeId ?: '-'}"></td>
-                    <td th:text="${emp.department ?: '-'}"></td>
-                    <td th:text="${emp.designation ?: '-'}"></td>
-                    <td th:text="${emp.email ?: '-'}"></td>
+                    <!-- 1. Full Name (Uses the getFullName() helper method) -->
+                    <td class="ps-4 fw-semibold" th:text="${emp.fullName}">John Doe</td>
+                    
+                    <!-- 2. Employee ID (Mapped to actual field: employeeCode) -->
+                    <td><code class="badge bg-light text-dark border" th:text="${emp.employeeCode ?: '-'}">EMP-001</code></td>
+                    
+                    <!-- 3. CRITICAL FIX: Department Name (Prevents LazyInitializationException) -->
+                    <td th:text="${emp.department != null ? emp.department.name : 'Unassigned'}">IT</td>
+                    
+                    <!-- 4. Designation (Mapped to actual field: jobTitle) -->
+                    <td th:text="${emp.jobTitle ?: '-'}">Software Engineer</td>
+                    
+                    <!-- 5. Email -->
+                    <td th:text="${emp.email ?: '-'}">john@company.com</td>
+                    
+                    <!-- 6. Actions -->
                     <td class="text-end pe-4">
-                        <a th:href="@{/itams/employees/{id}/edit(id=${emp.id})}" class="btn btn-sm btn-outline-primary">Edit</a>
-                        <form th:action="@{/itams/employees/{id}/delete(id=${emp.id})}" method="post" class="d-inline" onsubmit="return confirm('Deactivate this employee?')">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">Deactivate</button>
+                        <a th:href="@{/itams/employees/{id}/edit(id=${emp.id})}" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil-square"></i> Edit
+                        </a>
+                        <form th:action="@{/itams/employees/{id}/delete(id=${emp.id})}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to deactivate this employee and revoke their IT access?');">
+                            <!-- Thymeleaf's th:action automatically injects the CSRF token -->
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-person-x"></i> Deactivate
+                            </button>
                         </form>
                     </td>
                 </tr>
-                </tbody>
-            </table>
+                
+                <!-- Empty State (If no employees exist) -->
+                <tr th:if="${#lists.isEmpty(employees)}">
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-people fs-1 d-block mb-2"></i>
+                        No active employees found. 
+                        <a href="/itams/employees/new" class="text-primary fw-semibold">Onboard your first employee</a>.
+                    </td>
+                </tr>
+            </tbody>
         </div>
     </div>
 </main>

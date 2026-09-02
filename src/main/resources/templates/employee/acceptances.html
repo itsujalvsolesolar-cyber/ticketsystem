@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Asset Acceptance')}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+<main class="main-content enterprise-workspace">
+    
+    <header class="workspace-header mb-5">
+        <h1 class="h2 fw-bold tracking-tight mb-1">Asset Handover</h1>
+        <p class="text-secondary fs-5 mb-0">Review and digitally sign for your assigned hardware.</p>
+    </header>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div th:if="${#lists.isEmpty(pendingAllocations)}" class="enterprise-card text-center py-5">
+                <i class="bi bi-check-circle-fill text-success fs-1 mb-3"></i>
+                <h5 class="fw-bold">All Caught Up!</h5>
+                <p class="text-muted">You have no pending asset acceptances.</p>
+            </div>
+
+            <div th:each="alloc : ${pendingAllocations}" class="enterprise-card mb-4">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h4 class="fw-bold mb-1" th:text="${alloc.asset.name}">MacBook Pro 14"</h4>
+                        <p class="text-muted small mb-0">Asset Tag: <code th:text="${alloc.asset.assetTag}"></code></p>
+                    </div>
+                    <span class="badge bg-warning-subtle text-warning-emphasis">Action Required</span>
+                </div>
+                
+                <hr class="my-3">
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Condition</span>
+                        <span class="fw-semibold" th:text="${alloc.condition.displayName}">New</span>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted small d-block">Serial Number</span>
+                        <code th:text="${alloc.asset.serialNumber}"></code>
+                    </div>
+                </div>
+
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <div class="small">By signing below, you acknowledge receipt of this asset in the stated condition and accept responsibility for it.</div>
+                </div>
+
+                <!-- Signature Canvas Area -->
+                <div class="signature-pad-container mt-3">
+                    <label class="form-label fw-semibold">Your Signature</label>
+                    <div class="canvas-wrapper border rounded-3 bg-white position-relative" style="height: 200px; touch-action: none;">
+                        <canvas th:id="'sigPad-' + ${alloc.id}" class="w-100 h-100" style="cursor: crosshair;"></canvas>
+                        <button class="btn btn-sm btn-outline-secondary position-absolute top-0 end-0 m-2 clear-btn" 
+                                th:data-target="'sigPad-' + ${alloc.id}">Clear</button>
+                    </div>
+                    <div class="form-text mb-3">Draw your signature using your mouse or touch screen.</div>
+                    
+                    <button class="btn btn-primary w-100 submit-sig-btn" 
+                            th:data-id="${alloc.id}" 
+                            th:data-canvas="'sigPad-' + ${alloc.id}">
+                        <i class="bi bi-pen-fill me-2"></i>Sign & Accept Asset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize all signature pads on the page
+    document.querySelectorAll('.canvas-wrapper canvas').forEach(canvas => {
+        initSignaturePad(canvas);
+    });
+
+    // Clear buttons
+    document.querySelectorAll('.clear-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetId = this.getAttribute('data-target');
+            const canvas = document.getElementById(targetId);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+    });
+
+    // Submit buttons
+    document.querySelectorAll('.submit-sig-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const allocId = this.getAttribute('data-id');
+            const canvasId = this.getAttribute('data-canvas');
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Check if canvas is blank
+            const blank = document.createElement('canvas');
+            blank.width = canvas.width;
+            blank.height = canvas.height;
+            if (canvas.toDataURL() === blank.toDataURL()) {
+                alert('Please draw your signature before submitting.');
+                return;
+            }
+
+            const signatureData = canvas.toDataURL('image/png');
+            const csrfToken = document.querySelector('meta[name="_csrf"]').getAttribute('content');
+            const csrfHeader = document.querySelector('meta[name="_csrf_header"]').getAttribute('content');
+
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+
+            fetch(`/employee/allocations/${allocId}/accept`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    [csrfHeader]: csrfToken
+                },
+                body: JSON.stringify({ signature: signatureData })
+            })
+            .then(res => {
+                if(res.ok) {
+                    location.reload(); // Reload to show updated status
+                } else {
+                    alert('Failed to record signature. Please try again.');
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-pen-fill me-2"></i>Sign & Accept Asset';
+                }
+            });
+        });
+    });
+});
+
+function initSignaturePad(canvas) {
+    const ctx = canvas.getContext('2d');
+    let drawing = false;
+    let current = { x: 0, y: 0 };
+
+    // Set actual resolution for retina displays
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = rect.height * 2;
+    ctx.scale(2, 2);
+    
+    ctx.strokeStyle = '#0f172a'; // Dark ink
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    function getPosition(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (e.clientX || e.touches[0].clientX) - rect.left,
+            y: (e.clientY || e.touches[0].clientY) - rect.top
+        };
+    }
+
+    function startDrawing(e) {
+        drawing = true;
+        current = getPosition(e);
+        e.preventDefault();
+    }
+
+    function draw(e) {
+        if (!drawing) return;
+        const pos = getPosition(e);
+        ctx.beginPath();
+        ctx.moveTo(current.x, current.y);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        current = pos;
+        e.preventDefault();
+    }
+
+    function stopDrawing() { drawing = false; }
+
+    // Mouse events
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    // Touch events
+    canvas.addEventListener('touchstart', startDrawing);
+    canvas.addEventListener('touchmove', draw);
+    canvas.addEventListener('touchend', stopDrawing);
+}
+</script>
+</body>
+</html>

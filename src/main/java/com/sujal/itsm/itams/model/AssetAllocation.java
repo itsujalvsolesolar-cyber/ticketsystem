@@ -101,4 +101,12 @@ public class AssetAllocation {
 
     @Column(name = "acceptance_user_agent", length = 255)
     private String acceptanceUserAgent;
+
+
+    @Column(columnDefinition = "TEXT")
+    private String digitalSignature; // Base64 Image
+    
+    private String acceptedIp;
+    private String acceptedUserAgent;
+
 }

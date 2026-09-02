@@ -42,9 +42,14 @@ public class DigitalAccessController {
     public String create(@ModelAttribute DigitalAccess access, 
                          @RequestParam Long employeeId,
                          RedirectAttributes redirectAttributes) {
-        Employee employee = employeeService.findById(employeeId);
+
+        // FIX: Fetch the target employee selected in the dropdown, NOT the logged-in admin
+        Employee employee = employeeService.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found with ID: " + employeeId));
+        
         access.setEmployee(employee);
         accessService.create(access);
+        
         redirectAttributes.addFlashAttribute("success", "Digital access granted successfully!");
         return "redirect:/itams/access";
     }
