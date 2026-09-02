@@ -7,7 +7,6 @@
 
     <meta name="_csrf" th:content="${_csrf.token}"/>
     <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-
     <meta id="prefTheme" th:content="${userPrefs != null ? userPrefs.theme.name() : 'SYSTEM'}">
 
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎫</text></svg>">
@@ -18,9 +17,6 @@
 </head>
 <body>
 
-<!--
-  IMPORTANT: Everything the child page needs MUST be inside this fragment root.
--->
 <div th:fragment="sidebar">
 
     <!-- 1. MOBILE MENU BUTTON -->
@@ -47,19 +43,34 @@
             <button class="search-trigger">
                 <i class="bi bi-search"></i>
                 <span>Quick search...</span>
-                <kbd>K</kbd>
+                <kbd>⌘ K</kbd>
             </button>
         </div>
 
         <ul class="nav flex-column sidebar-nav">
+            
+            <!-- ==========================================
+                 SECTION 1: CORE & SELF-SERVICE (All Users)
+                 ========================================== -->
+            <li class="nav-section-title">Workspace</li>
             <li class="nav-item">
                 <a class="nav-link" th:classappend="${currentUri == '/' ? 'active' : ''}" href="/">
-                    <i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span>
+                    <i class="bi bi-grid-1x2-fill"></i><span>IT Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/employee/dashboard') ? 'active' : ''}" href="/employee/dashboard">
+                    <i class="bi bi-person-workspace"></i><span>My Workspace</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/employee/tickets') ? 'active' : ''}" href="/employee/tickets">
+                    <i class="bi bi-ticket-perforated"></i><span>My Tickets</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/tickets/new') ? 'active' : ''}" href="/tickets/new">
-                    <i class="bi bi-plus-circle-fill"></i><span>Create Ticket</span>
+                    <i class="bi bi-plus-circle-fill"></i><span>Request Support</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -67,189 +78,109 @@
                     <i class="bi bi-clock-history"></i><span>My Shift</span>
                 </a>
             </li>
-            <!-- IT Asset Management Section -->
-            <li class="nav-section-title" th:if="${currentUser != null and currentUser.itStaff}"
-                style="color: var(--vsole-yellow);">
-                IT ASSETS
-            </li>
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/dashboard') ? 'active' : ''}" href="/itams/dashboard">
-                    <i class="bi bi-speedometer2"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
 
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/categories') ? 'active' : ''}" href="/itams/categories">
-                    <i class="bi bi-tags"></i>
-                    <span>Categories</span>
-                </a>
-            </li>
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/brands') ? 'active' : ''}" href="/itams/brands">
-                    <i class="bi bi-bookmark"></i>
-                    <span>Brands</span>
-                </a>
-            </li>
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/assets') ? 'active' : ''}" href="/itams/assets">
-                    <i class="bi bi-box-seam"></i>
-                    <span>Assets</span>
-                </a>
-            </li>
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/suppliers') ? 'active' : ''}" href="/itams/suppliers">
-                    <i class="bi bi-truck"></i>
-                    <span>Suppliers</span>
-                </a>
-            </li>
+            <!-- ==========================================
+                 SECTION 2: IT ASSET MANAGEMENT (IT Staff & Admins)
+                 ========================================== -->
+            <th:block th:if="${currentUser != null and (currentUser.hasRole('IT_EXECUTIVE') or currentUser.hasRole('IT_MANAGER') or currentUser.isAdmin())}">
+                <li class="nav-section-title">IT Assets (ITAMS)</li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/dashboard') ? 'active' : ''}" href="/itams/dashboard">
+                        <i class="bi bi-speedometer2"></i><span>Asset Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/assets') ? 'active' : ''}" href="/itams/assets">
+                        <i class="bi bi-box-seam"></i><span>Hardware Assets</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/employees') ? 'active' : ''}" href="/itams/employees">
+                        <i class="bi bi-people-fill"></i><span>Workforce Directory</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/software') ? 'active' : ''}" href="/itams/software">
+                        <i class="bi bi-disc"></i><span>Software Licenses</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/access') ? 'active' : ''}" href="/itams/access">
+                        <i class="bi bi-shield-lock"></i><span>Digital Access</span>
+                    </a>
+                </li>
+                
+                <!-- Asset Operations & Catalogs -->
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/categories') or #strings.startsWith(currentUri, '/itams/brands') or #strings.startsWith(currentUri, '/itams/suppliers') ? 'active' : ''}" href="/itams/categories">
+                        <i class="bi bi-tags"></i><span>Catalogs & Suppliers</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/assets/scanner') ? 'active' : ''}" href="/itams/assets/scanner">
+                        <i class="bi bi-qr-code-scan"></i><span>QR Scanner</span>
+                    </a>
+                </li>
+            </th:block>
 
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/employees') ? 'active' : ''}" href="/itams/employees">
-                    <i class="bi bi-people"></i>
-                    <span>Employees</span>
-                </a>
-            </li>
+            <!-- ==========================================
+                 SECTION 3: IAM, AUDIT & ADMINISTRATION (Admins Only)
+                 ========================================== -->
+            <th:block th:if="${currentUser != null and currentUser.isAdmin()}">
+                <li class="nav-section-title">Administration</li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/iam') ? 'active' : ''}" href="/iam/dashboard">
+                        <i class="bi bi-person-badge"></i><span>Identity & Access (IAM)</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/admin/settings') ? 'active' : ''}" href="/admin/settings">
+                        <i class="bi bi-gear-fill"></i><span>Users & Roles</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/admin/console') ? 'active' : ''}" href="/admin/console">
+                        <i class="bi bi-gear-wide-connected"></i><span>System Configuration</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/audit') ? 'active' : ''}" href="/audit/viewer">
+                        <i class="bi bi-shield-check"></i><span>Audit Logs</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/admin/workflows') ? 'active' : ''}" href="/admin/workflows">
+                        <i class="bi bi-diagram-3-fill"></i><span>Workflow Builder</span>
+                    </a>
+                </li>
+            </th:block>
 
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/products') ? 'active' : ''}" href="/itams/products">
-                    <i class="bi bi-box-seam"></i>
-                    <span>Products</span>
-                </a>
-            </li>
+            <!-- ==========================================
+                 SECTION 4: EXECUTIVE & REPORTING
+                 ========================================== -->
+            <th:block th:if="${currentUser != null and (currentUser.hasRole('EXECUTIVE') or currentUser.isAdmin())}">
+                <li class="nav-section-title">Executive</li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/executive/dashboard}">
+                        <i class="bi bi-graph-up-arrow"></i><span>Executive Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/itams/executive/dashboard}">
+                        <i class="bi bi-hdd-network"></i><span>NAS Management</span>
+                    </a>
+                </li>
+            </th:block>
 
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/warehouses') ? 'active' : ''}" href="/itams/warehouses">
-                    <i class="bi bi-building"></i>
-                    <span>Warehouses</span>
-                </a>
-            </li>
-
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/stock') ? 'active' : ''}" href="/itams/stock">
-                    <i class="bi bi-arrow-left-right"></i>
-                    <span>Stock Movements</span>
-                </a>
-            </li>
-
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/software-catalog') ? 'active' : ''}" href="/itams/software-catalog">
-                    <i class="bi bi-collection"></i>
-                    <span>Software Catalog</span>
-                </a>
-            </li>
-
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/software') ? 'active' : ''}" href="/itams/software">
-                    <i class="bi bi-disc"></i>
-                    <span>Software</span>
-                </a>
-            </li>
-
-            <li class="nav-item" th:if="${currentUser != null and currentUser.itStaff}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/itams/access') ? 'active' : ''}" href="/itams/access">
-                    <i class="bi bi-shield-lock"></i>
-                    <span>Digital Access</span>
-                </a>
-            </li>
-
-            <li class="nav-item" th:if="${currentUser != null and currentUser.adminLevel}">
-                <a class="nav-link" th:classappend="${#strings.startsWith(currentUri, '/admin/workflows') ? 'active' : ''}" href="/admin/workflows">
-                    <i class="bi bi-diagram-3-fill"></i>
-                    <span>Workflow Builder</span>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/api/notifications/history}">
-                    <i class="bi bi-bell me-2"></i> Notification History
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/executive/dashboard}">
-                    <i class="bi bi-speedometer2 me-2"></i> Executive Dashboard
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/itams/executive/dashboard}">
-                    <i class="bi bi-hdd-network me-2"></i> NAS Management
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/audit/viewer}">
-                    <i class="bi bi-shield-check me-2"></i> Audit Logs
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/audit/recycle-bin}">
-                    <i class="bi bi-trash me-2"></i> Recycle Bin
-                </a>
-            </li>
-
-            <!-- System Configuration (SMTP, Company, Security) -->
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/admin/console}"
-                   th:classappend="${#strings.startsWith(currentUri, '/admin/console') ? 'active' : ''}">
-                    <i class="bi bi-gear-wide-connected me-2"></i> System Config
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/iam/dashboard}"
-                   th:classappend="${#strings.startsWith(currentUri, '/iam') ? 'active' : ''}">
-                    <i class="bi bi-shield-lock me-2"></i> Identity & Access (IAM)
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/itams/assets/scanner}">
-                    <i class="bi bi-qr-code-scan me-2"></i> QR Scanner
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/itams/assets/qr-sticker-designer}">
-                    <i class="bi bi-qr-code me-2"></i>QR Sticker Designer
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/itams/assets/qr-template-designer}">
-                    <i class="bi bi-palette me-2"></i>QR Template Designer
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a class="nav-link" th:href="@{/itams/assets/qr-canvas-designer}">
-                    <i class="bi bi-palette me-2"></i>QR Canvas Designer
-                </a>
-            </li>
-
-            <!-- Administration Section (Visible only to Super Admin or IT Manager) -->
-            <li class="nav-section-title" th:if="${currentUser != null and currentUser.adminLevel}">
-                Administration
-            </li>
-
-            <!-- Master Data & User Management (Users, Departments, Categories, Roles) -->
-            <li class="nav-item" th:if="${currentUser != null and currentUser.adminLevel}">
-                <a class="nav-link" th:href="@{/admin/settings}"
-                   th:classappend="${#strings.startsWith(currentUri, '/admin/settings') ? 'active' : ''}">
-                    <i class="bi bi-gear-fill me-2"></i>
-                    <span>Users & Roles</span>
-                </a>
-            </li>
         </ul>
 
+        <!-- User Profile Footer -->
         <div class="sidebar-footer" th:if="${currentUser != null}">
             <div class="user-profile">
                 <div class="user-avatar" th:text="${#strings.substring(currentUser.username, 0, 1).toUpperCase()}">U</div>
                 <div class="user-info">
-                    <div class="user-name" th:text="${currentUser.username}">Username</div>
-                    <!-- ✅ FIXED: Extract role names from the Set and join them with a comma -->
+                    <div class="user-name" th:text="${currentUser.fullName != null ? currentUser.fullName : currentUser.username}">User</div>
+                    <!-- Extract role names from the Set and join them -->
                     <div class="user-role" th:text="${#strings.listJoin(currentUser.roles.![name], ', ')}">Role</div>
                 </div>
                 <form th:action="@{/logout}" method="post" id="logoutForm" class="d-none"></form>
@@ -259,18 +190,12 @@
             </div>
         </div>
 
-
     </nav>
 
     <!-- ==========================================
-         SCRIPTS - LOAD IN CORRECT ORDER
+         SCRIPTS
          ========================================== -->
-
-    <!-- 1. Bootstrap JS FIRST (Added to fix 'bootstrap is not defined' error) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- 2. Then your custom scripts -->
-    <!-- 4. SCRIPTS FOR SIDEBAR & MOBILE TOGGLE -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
