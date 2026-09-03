@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${pageTitle})}"></head>
+<body>
+<div th:replace="~{fragments/layout :: sidebar}"></div>
+<main class="main-content enterprise-workspace">
+    
+    <!-- Breadcrumb & Actions -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="/itams/employees" class="text-decoration-none">Workforce Directory</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${employee.fullName}">Employee</li>
+            </ol>
+        </nav>
+        <div class="d-flex gap-2">
+            <a th:href="@{/itams/employees/{id}/edit(id=${employee.id})}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil-square me-1"></i> Edit Profile
+            </a>
+            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#allocateAssetModal">
+                <i class="bi bi-plus-lg me-1"></i> Allocate Asset
+            </button>
+        </div>
+    </div>
+
+    <!-- Profile Header Card -->
+    <div class="enterprise-card mb-4">
+        <div class="d-flex align-items-center gap-4 flex-wrap">
+            <div class="user-avatar-lg bg-primary-subtle text-primary">
+                <span th:text="${#strings.substring(employee.fullName, 0, 1).toUpperCase()}">E</span>
+            </div>
+            <div class="flex-grow-1">
+                <h2 class="h4 fw-bold mb-1" th:text="${employee.fullName}">Employee Name</h2>
+                <p class="text-secondary mb-2" th:text="${(employee.jobTitle != null ? employee.jobTitle + ' • ' : '') + (employee.department != null ? employee.department.name : 'Unassigned')}">Job Title • Department</p>
+                <div class="d-flex gap-3 flex-wrap small text-secondary">
+                    <span><i class="bi bi-envelope me-1"></i> <span th:text="${employee.email}">email</span></span>
+                    <span><i class="bi bi-telephone me-1"></i> <span th:text="${employee.phone != null ? employee.phone : 'No phone'}">phone</span></span>
+                    <span><i class="bi bi-calendar3 me-1"></i> Joined <span th:text="${employee.dateOfJoining != null ? #temporals.format(employee.dateOfJoining, 'MMM yyyy') : 'Unknown'}">Date</span></span>
+                </div>
+            </div>
+            <div class="d-flex flex-column align-items-end gap-2">
+                <span class="badge bg-success-subtle text-success-emphasis rounded-pill" th:if="${employee.active}">
+                    <i class="bi bi-check-circle-fill me-1"></i> Active Employee
+                </span>
+                <span class="badge bg-danger-subtle text-danger-emphasis rounded-pill" th:unless="${employee.active}">
+                    <i class="bi bi-x-circle-fill me-1"></i> Inactive
+                </span>
+                <span class="badge bg-info-subtle text-info-emphasis rounded-pill" th:if="${employee.user != null and employee.user.active}">
+                    <i class="bi bi-shield-lock-fill me-1"></i> IT Access Enabled
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <ul class="nav nav-tabs enterprise-tabs mb-4" id="profileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="assets-tab" data-bs-toggle="tab" data-bs-target="#assets-pane" type="button" role="tab">
+                <i class="bi bi-box-seam me-1"></i> Assets <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" th:text="${#lists.size(allocations)}">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tickets-tab" data-bs-toggle="tab" data-bs-target="#tickets-pane" type="button" role="tab">
+                <i class="bi bi-ticket-perforated me-1"></i> Tickets <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" th:text="${#lists.size(tickets)}">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="access-tab" data-bs-toggle="tab" data-bs-target="#access-pane" type="button" role="tab">
+                <i class="bi bi-shield-lock me-1"></i> Access & Software <span class="badge bg-secondary-subtle text-secondary-emphasis ms-1" th:text="${#lists.size(digitalAccess) + #lists.size(licenses)}">0</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="audit-tab" data-bs-toggle="tab" data-bs-target="#audit-pane" type="button" role="tab">
+                <i class="bi bi-clock-history me-1"></i> Audit & Activity
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tabs Content -->
+    <div class="tab-content" id="profileTabsContent">
+        
+        <!-- ASSETS TAB -->
+        <div class="tab-pane fade show active" id="assets-pane" role="tabpanel">
+            <div class="enterprise-card p-0">
+                <div th:if="${#lists.isEmpty(allocations)}" class="empty-state">
+                    <i class="bi bi-box-seam fs-1 text-muted mb-3 d-block"></i>
+                    <h6 class="fw-semibold">No hardware allocated</h6>
+                    <p class="text-muted small mb-0">This employee currently has no assigned assets.</p>
+                </div>
+                <div th:unless="${#lists.isEmpty(allocations)}" class="table-responsive">
+                    <table class="table enterprise-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Asset Tag</th>
+                                <th>Model / Category</th>
+                                <th>Serial Number</th>
+                                <th>Status</th>
+                                <th>Assigned Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="alloc : ${allocations}">
+                                <td><code class="badge bg-light text-dark border" th:text="${alloc.asset.assetTag != null ? alloc.asset.assetTag : 'N/A'}">AST-001</code></td>
+                                <td>
+                                    <div class="fw-semibold" th:text="${alloc.asset.model != null ? alloc.asset.model : 'Unknown Model'}">MacBook Pro</div>
+                                    <div class="text-muted small" th:text="${alloc.asset.category != null ? alloc.asset.category.name : 'Uncategorized'}">Laptop</div>
+                                </td>
+                                <td class="font-monospace small" th:text="${alloc.asset.serialNumber != null ? alloc.asset.serialNumber : '-'}">C02X123</td>
+                                <td><span class="status-pill status-pill-success" th:text="${alloc.asset.status != null ? alloc.asset.status : 'In Use'}">In Use</span></td>
+                                <td class="text-muted small" th:text="${alloc.createdAt != null ? #temporals.format(alloc.createdAt, 'dd MMM yyyy') : '-'}">Date</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TICKETS TAB -->
+        <div class="tab-pane fade" id="tickets-pane" role="tabpanel">
+            <div class="enterprise-card p-0">
+                <div th:if="${#lists.isEmpty(tickets)}" class="empty-state">
+                    <i class="bi bi-ticket-perforated fs-1 text-muted mb-3 d-block"></i>
+                    <h6 class="fw-semibold">No support tickets</h6>
+                    <p class="text-muted small mb-0">This employee hasn't raised any IT support tickets.</p>
+                </div>
+                <div th:unless="${#lists.isEmpty(tickets)}" class="table-responsive">
+                    <table class="table enterprise-table mb-0">
+                        <thead>
+                            <tr>
+                                <th>Ticket ID</th>
+                                <th>Subject</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="ticket : ${tickets}">
+                                <td class="font-monospace small" th:text="'#' + ${ticket.id}">#1042</td>
+                                <td class="fw-semibold" th:text="${ticket.subject}">Laptop issue</td>
+                                <td><span class="badge bg-warning-subtle text-warning-emphasis" th:text="${ticket.priority}">High</span></td>
+                                <td><span class="status-pill status-pill-info" th:text="${ticket.status}">Open</span></td>
+                                <td class="text-muted small" th:text="${#temporals.format(ticket.createdAt, 'dd MMM yyyy')}">Date</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACCESS & SOFTWARE TAB -->
+        <div class="tab-pane fade" id="access-pane" role="tabpanel">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="enterprise-card h-100">
+                        <h5 class="fw-semibold mb-3"><i class="bi bi-shield-lock me-2 text-primary"></i>Digital Access</h5>
+                        <div th:if="${#lists.isEmpty(digitalAccess)}" class="text-muted small py-3">No active digital access grants (NAS, Email, VPN).</div>
+                        <ul class="list-group list-group-flush" th:unless="${#lists.isEmpty(digitalAccess)}">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0" th:each="access : ${digitalAccess}">
+                                <div>
+                                    <div class="fw-semibold" th:text="${access.accessType}">NAS Folder</div>
+                                    <div class="text-muted small" th:text="${access.description != null ? access.description : 'No description'}">Path</div>
+                                </div>
+                                <span class="status-pill status-pill-success">Active</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="enterprise-card h-100">
+                        <h5 class="fw-semibold mb-3"><i class="bi bi-disc me-2 text-success"></i>Software Licenses</h5>
+                        <div th:if="${#lists.isEmpty(licenses)}" class="text-muted small py-3">No software licenses assigned.</div>
+                        <ul class="list-group list-group-flush" th:unless="${#lists.isEmpty(licenses)}">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0" th:each="lic : ${licenses}">
+                                <div>
+                                    <div class="fw-semibold" th:text="${lic.softwareCatalog != null ? lic.softwareCatalog.name : 'Unknown Software'}">Adobe CC</div>
+                                    <div class="text-muted small" th:text="${lic.licenseKey != null ? lic.licenseKey : 'Managed via SSO'}">License Key</div>
+                                </div>
+                                <span class="status-pill status-pill-success">Active</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUDIT TAB -->
+        <div class="tab-pane fade" id="audit-pane" role="tabpanel">
+            <div class="enterprise-card">
+                <h5 class="fw-semibold mb-3"><i class="bi bi-clock-history me-2 text-secondary"></i>Recent Activity Timeline</h5>
+                <ul class="activity-timeline">
+                    <li class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <p class="mb-0 small"><strong>Asset Allocated:</strong> Hardware assigned by IT Admin</p>
+                            <span class="text-muted extra-small">Pending Phase 22 Audit Integration</span>
+                        </div>
+                    </li>
+                    <li class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <p class="mb-0 small"><strong>Account Provisioned:</strong> ITSM Login enabled</p>
+                            <span class="text-muted extra-small">System Event</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<style>
+    .user-avatar-lg {
+        width: 72px; height: 72px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.75rem; font-weight: 700;
+    }
+    .enterprise-tabs { border-bottom: 1px solid var(--border-color, #e2e8f0); }
+    .enterprise-tabs .nav-link {
+        color: var(--text-secondary, #64748b); border: none;
+        padding: 0.75rem 1.25rem; font-weight: 500; font-size: 0.9rem;
+        border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .enterprise-tabs .nav-link.active {
+        color: var(--accent-primary, #2563eb); background: transparent;
+        border-bottom: 2px solid var(--accent-primary, #2563eb);
+    }
+    .status-pill-info { background: rgba(59, 130, 246, 0.1); color: #2563eb; }
+    .empty-state { padding: 4rem 2rem; text-align: center; }
+    .extra-small { font-size: 0.75rem; }
+</style>
+</body>
+</html>

@@ -35,13 +35,20 @@
                     
                     <!-- 6. Actions -->
                     <td class="text-end pe-4">
-                        <a th:href="@{/itams/employees/{id}/edit(id=${emp.id})}" class="btn btn-sm btn-outline-primary me-1">
+                        <!-- ✨ NEW: 360 Profile Button -->
+                        <a th:href="@{/itams/employees/{id}/360(id=${emp.id})}" class="btn btn-sm btn-outline-primary me-1" title="View 360 Profile">
+                            <i class="bi bi-person-badge"></i> 360
+                        </a>
+                        
+                        <!-- Existing Edit Button -->
+                        <a th:href="@{/itams/employees/{id}/edit(id=${emp.id})}" class="btn btn-sm btn-outline-secondary me-1" title="Edit Profile">
                             <i class="bi bi-pencil-square"></i> Edit
                         </a>
+                        
+                        <!-- Existing Deactivate Form -->
                         <form th:action="@{/itams/employees/{id}/delete(id=${emp.id})}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to deactivate this employee and revoke their IT access?');">
-                            <!-- Thymeleaf's th:action automatically injects the CSRF token -->
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-person-x"></i> Deactivate
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Deactivate">
+                                <i class="bi bi-person-x"></i>
                             </button>
                         </form>
                     </td>

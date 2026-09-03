@@ -4,346 +4,285 @@
 <body>
 <div th:replace="~{fragments/layout :: sidebar}"></div>
 
-<main class="main-content enterprise-portal">
-    <!-- 1. HEADER & GLOBAL SEARCH -->
-    <header class="portal-header">
-        <div class="header-text">
-            <h1 class="portal-title" th:text="'Good ' + ${timeOfDay} + ', ' + ${currentUser.firstName}">Good morning, John</h1>
-            <p class="portal-subtitle">Manage your assigned assets, access, and IT support.</p>
-        </div>
-        <div class="header-actions">
-            <button class="cmd-k-btn" data-bs-toggle="modal" data-bs-target="#cmdKModal" aria-label="Quick Search">
-                <i class="bi bi-search"></i>
-                <span>Search assets, tickets...</span>
-                <kbd>⌘K</kbd>
-            </button>
-        </div>
-    </header>
+<main class="main-content enterprise-workspace">
+    <div class="page-container">
 
-    <!-- 2. BENTO GRID LAYOUT -->
-    <div class="bento-grid">
-        
-        <!-- CARD A: PRIMARY ASSET (The Hero Card) -->
-        <div class="bento-card span-2 asset-hero-card" th:if="${primaryAsset != null}">
-            <div class="card-header-row">
-                <span class="badge bg-success-subtle text-success-emphasis rounded-pill">
-                    <i class="bi bi-check-circle-fill me-1"></i> Active & Insured
-                </span>
-                <button class="btn-icon" aria-label="More options"><i class="bi bi-three-dots"></i></button>
+        <!-- 1. HEADER & ACTIONS -->
+        <header class="workspace-header d-flex justify-content-between align-items-end flex-wrap gap-3 mb-4">
+            <div>
+                <h1 class="h3 fw-bold mb-1">
+                    Good <span th:text="${timeOfDay}">day</span>, 
+                    <span th:text="${currentUser.firstName != null ? currentUser.firstName : (currentUser.fullName != null ? currentUser.fullName : currentUser.username)}">Employee</span>
+                </h1>
+                <p class="text-secondary mb-0" th:text="${employee != null && employee.jobTitle != null ? employee.jobTitle : 'Employee Workspace'}">
+                    Employee Workspace
+                </p>
             </div>
+            <div class="d-flex align-items-center gap-2">
+                <a th:href="@{/tickets/new}" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-plus-lg"></i>
+                    <span>New Ticket</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- 2. KPI METRICS ROW -->
+        <section class="metrics-row mb-4">
+            <div class="enterprise-card metric-item">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">My Assets</span>
+                    <span class="badge bg-primary-subtle text-primary"><i class="bi bi-laptop"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0" th:text="${assignedAssetsCount}">0</div>
+            </div>
+
+            <div class="enterprise-card metric-item">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">Open Tickets</span>
+                    <span class="badge bg-warning-subtle text-warning"><i class="bi bi-ticket-perforated"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0" th:text="${openTicketsCount}">0</div>
+            </div>
+
+            <div class="enterprise-card metric-item" th:classappend="${pendingAcceptances > 0} ? 'border-warning pulse-border' : ''">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">Pending Acceptances</span>
+                    <span class="badge bg-danger-subtle text-danger"><i class="bi bi-pen"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0" th:classappend="${pendingAcceptances > 0} ? 'text-warning' : ''" th:text="${pendingAcceptances}">0</div>
+            </div>
+
+            <div class="enterprise-card metric-item">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-secondary small">Active Digital Access</span>
+                    <span class="badge bg-success-subtle text-success"><i class="bi bi-shield-check"></i></span>
+                </div>
+                <div class="h3 fw-bold mb-0" th:text="${activeAccessCount}">0</div>
+            </div>
+        </section>
+
+        <!-- 3. BENTO-GRID / ASSET & TICKET CORE -->
+        <div class="row g-4">
             
-            <div class="asset-content">
-                <div class="asset-info">
-                    <h2 class="asset-name" th:text="${primaryAsset.name}">MacBook Pro 16"</h2>
-                    <p class="asset-tag" th:text="${primaryAsset.assetTag}">AST-000125</p>
-                    
-                    <div class="asset-meta-grid">
-                        <div class="meta-item">
-                            <span class="meta-label">Serial Number</span>
-                            <span class="meta-value font-monospace" th:text="${primaryAsset.serialNumber}">C02X12345</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label">Warranty Expires</span>
-                            <span class="meta-value text-warning" th:text="${#temporals.format(primaryAsset.warrantyEndDate, 'MMM yyyy')}">Aug 2027</span>
-                        </div>
-                    </div>
-                </div>
+            <!-- LEFT COLUMN: PRIMARY HERO ASSET + ASSETS TABLE -->
+            <div class="col-lg-8">
                 
-                <div class="asset-visual">
-                    <!-- Premium SVG Illustration or QR Code -->
-                    <div class="qr-glassmorphism">
-                        <img th:src="@{/api/assets/{id}/qr(id=${primaryAsset.id})}" alt="Asset QR" class="qr-code-img">
+                <!-- HERO CARD: Primary Hardware Asset (if allocated) -->
+                <div class="enterprise-card mb-4 asset-hero-card" th:if="${primaryAsset != null}">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
+                            <i class="bi bi-check-circle-fill me-1"></i> Primary Device
+                        </span>
+                        <code class="text-secondary small font-monospace" th:text="${primaryAsset.assetTag}">AST-0000</code>
+                    </div>
+
+                    <div class="row align-items-center g-3">
+                        <div class="col-md-8">
+                            <h4 class="fw-bold mb-1 text-primary" th:text="${primaryAsset.name}">MacBook Pro 16"</h4>
+                            <p class="text-secondary small mb-3" th:text="${primaryAsset.model != null ? primaryAsset.model : 'Standard Allocation'}">Model</p>
+                            
+                            <div class="row g-2 pt-2 border-top">
+                                <div class="col-6">
+                                    <div class="text-secondary extra-small text-uppercase">Serial Number</div>
+                                    <span class="font-monospace small fw-medium" th:text="${primaryAsset.serialNumber != null ? primaryAsset.serialNumber : 'N/A'}">C02X...</span>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-secondary extra-small text-uppercase">Warranty</div>
+                                    <span class="small fw-medium" th:text="${primaryAsset.warrantyEndDate != null ? #temporals.format(primaryAsset.warrantyEndDate, 'MMM yyyy') : 'Covered'}">Active</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- QR Code Container -->
+                        <div class="col-md-4 text-center">
+                            <div class="qr-box p-2 bg-white rounded-3 shadow-sm border d-inline-block">
+                                <img th:src="@{/api/assets/{id}/qr(id=${primaryAsset.id})}" alt="Asset QR Code" class="img-fluid qr-img" onerror="this.src='/images/qr-placeholder.png';">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4 pt-3 border-top">
+                        <a th:href="@{/itams/assets/scanner}" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-qr-code-scan"></i> Scan / Verify
+                        </a>
+                        <a th:href="@{/tickets/new(assetId=${primaryAsset.id})}" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1">
+                            <i class="bi bi-exclamation-triangle"></i> Report Hardware Issue
+                        </a>
+                    </div>
+                </div>
+
+                <!-- HARDWARE DIRECTORY TABLE -->
+                <div class="enterprise-card p-0">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+                        <h5 class="fw-semibold mb-0">My Hardware Allocations</h5>
+                        <span class="badge bg-light text-dark border" th:text="${#lists.size(allocations)} + ' Assigned'">0 Assigned</span>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(allocations)}" class="empty-state text-center p-5">
+                        <i class="bi bi-box-seam fs-1 text-muted d-block mb-2"></i>
+                        <h6 class="fw-semibold">No assets currently assigned</h6>
+                        <p class="text-muted small mb-0">When equipment is allocated to your profile, details and acceptance steps will appear here.</p>
+                    </div>
+
+                    <div th:unless="${#lists.isEmpty(allocations)}" class="table-responsive">
+                        <table class="table enterprise-table mb-0 align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Tag</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="alloc : ${allocations}">
+                                    <td>
+                                        <div class="fw-semibold" th:text="${alloc.asset != null ? (alloc.asset.name ?: alloc.asset.model) : 'Unknown Asset'}">Asset</div>
+                                        <div class="text-muted extra-small" th:text="${alloc.condition != null ? alloc.condition : 'Standard'}">Condition</div>
+                                    </td>
+                                    <td>
+                                        <code class="badge bg-light text-dark border" th:text="${alloc.asset != null ? alloc.asset.assetTag : '—'}">AST</code>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill" 
+                                              th:classappend="${alloc.acceptanceStatus != null && alloc.acceptanceStatus.name() == 'ACCEPTED'} ? 'status-pill-success' : 'status-pill-warning'" 
+                                              th:text="${alloc.acceptanceStatus != null ? alloc.acceptanceStatus.name() : 'PENDING'}">
+                                            STATUS
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <!-- Self-scoped link: employee can review and sign -->
+                                        <a class="btn btn-sm btn-outline-primary" 
+                                           th:if="${alloc.acceptanceStatus != null && alloc.acceptanceStatus.name() == 'PENDING'}"
+                                           th:href="@{/itams/allocations/{id}/acceptance(id=${alloc.id})}">
+                                            <i class="bi bi-pen me-1"></i> Sign & Accept
+                                        </a>
+                                        <a class="btn btn-sm btn-outline-secondary" 
+                                           th:unless="${alloc.acceptanceStatus != null && alloc.acceptanceStatus.name() == 'PENDING'}"
+                                           th:href="@{/itams/allocations/{id}/acceptance(id=${alloc.id})}">
+                                            View
+                                        </a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <div class="card-footer-row">
-                <button class="btn btn-outline-primary btn-sm" onclick="openQrScanner()">
-                    <i class="bi bi-qr-code-scan me-1"></i> Scan / Verify
-                </button>
-                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#reportIssueModal">
-                    <i class="bi bi-exclamation-triangle me-1"></i> Report Issue
-                </button>
-            </div>
-        </div>
-
-        <!-- CARD B: QUICK STATS -->
-        <div class="bento-card stat-card">
-            <div class="stat-icon bg-info-subtle text-info">
-                <i class="bi bi-hdd-network"></i>
-            </div>
-            <div class="stat-info">
-                <h3 class="stat-value" th:text="${nasAccessCount}">3</h3>
-                <p class="stat-label">Active NAS Folders</p>
-            </div>
-            <a href="/itams/access" class="card-link">View Access <i class="bi bi-arrow-right"></i></a>
-        </div>
-
-        <!-- CARD C: PENDING ACTIONS (Phase 10 Integration) -->
-        <div class="bento-card action-card" th:classappend="${pendingAcceptances > 0} ? 'pulse-warning' : ''">
-            <div class="stat-icon bg-warning-subtle text-warning">
-                <i class="bi bi-pen-fill"></i>
-            </div>
-            <div class="stat-info">
-                <h3 class="stat-value" th:text="${pendingAcceptances}">1</h3>
-                <p class="stat-label">Pending Acceptances</p>
-            </div>
-            <button class="btn btn-primary btn-sm w-100 mt-3" th:if="${pendingAcceptances > 0}" data-bs-toggle="modal" data-bs-target="#signatureModal">
-                Sign & Accept
-            </button>
-        </div>
-
-        <!-- CARD D: RECENT IT ACTIVITY (Timeline) -->
-        <div class="bento-card span-3 activity-card">
-            <div class="card-header-row">
-                <h3 class="card-title">Recent IT Activity</h3>
-                <a href="/notifications/history" class="text-secondary small">View All</a>
-            </div>
-            <div class="timeline">
-                <div class="timeline-item" th:each="log : ${recentActivity}">
-                    <div class="timeline-marker" th:classappend="${log.type == 'TICKET'} ? 'bg-primary' : 'bg-success'"></div>
-                    <div class="timeline-content">
-                        <p class="timeline-text" th:utext="${log.message}">Ticket <strong>#1042</strong> was resolved by IT Support.</p>
-                        <span class="timeline-time" th:text="${#temporals.format(log.timestamp, 'dd MMM, HH:mm')}">2 hours ago</span>
+            <!-- RIGHT COLUMN: QUICK REQUESTS + RECENT TICKETS -->
+            <div class="col-lg-4">
+                
+                <!-- QUICK REQUEST ACTIONS -->
+                <div class="enterprise-card mb-4">
+                    <h6 class="fw-semibold text-secondary text-uppercase small mb-3">Quick Requests</h6>
+                    <div class="d-flex flex-column gap-2">
+                        <a th:href="@{/itams/software/new}" class="quick-action-link">
+                            <span class="icon-bubble bg-primary-subtle text-primary"><i class="bi bi-app-indicator"></i></span>
+                            <span class="fw-medium">Request Software</span>
+                            <i class="bi bi-chevron-right ms-auto text-muted small"></i>
+                        </a>
+                        <a th:href="@{/itams/nas/folders}" class="quick-action-link">
+                            <span class="icon-bubble bg-success-subtle text-success"><i class="bi bi-folder-plus"></i></span>
+                            <span class="fw-medium">Request NAS Access</span>
+                            <i class="bi bi-chevron-right ms-auto text-muted small"></i>
+                        </a>
+                        <a th:href="@{/tickets/new}" class="quick-action-link">
+                            <span class="icon-bubble bg-danger-subtle text-danger"><i class="bi bi-tools"></i></span>
+                            <span class="fw-medium">Open Support Ticket</span>
+                            <i class="bi bi-chevron-right ms-auto text-muted small"></i>
+                        </a>
                     </div>
                 </div>
-                <!-- Empty State -->
-                <div th:if="${#lists.isEmpty(recentActivity)}" class="empty-state-inline">
-                    <i class="bi bi-check-circle text-success fs-1"></i>
-                    <p class="text-secondary mt-2">You're all caught up. No recent IT activity.</p>
+
+                <!-- MY RECENT TICKETS -->
+                <div class="enterprise-card p-0">
+                    <div class="card-header-custom d-flex justify-content-between align-items-center px-4 py-3 border-bottom">
+                        <h6 class="fw-semibold mb-0">My Recent Tickets</h6>
+                        <a th:href="@{/tickets}" class="text-decoration-none small">View all</a>
+                    </div>
+
+                    <div th:if="${#lists.isEmpty(myTickets)}" class="empty-state text-center p-4">
+                        <i class="bi bi-ticket-perforated fs-2 text-muted d-block mb-1"></i>
+                        <p class="text-muted small mb-0">No tickets submitted.</p>
+                    </div>
+
+                    <ul class="list-group list-group-flush" th:unless="${#lists.isEmpty(myTickets)}">
+                        <li class="list-group-item px-4 py-3 d-flex justify-content-between align-items-center" 
+                            th:each="t : ${#lists.subList(myTickets, 0, T(java.lang.Math).min(4, myTickets.size()))}">
+                            <div class="me-3 text-truncate">
+                                <a th:href="@{/tickets/{id}(id=${t.id})}" class="fw-medium text-dark text-decoration-none d-block text-truncate small" th:text="${t.title != null ? t.title : (t.subject != null ? t.subject : 'Ticket #' + t.id)}">
+                                    Ticket Subject
+                                </a>
+                                <span class="text-muted extra-small" th:text="'#' + ${t.id} + ' • ' + ${t.createdAt != null ? #temporals.format(t.createdAt, 'dd MMM') : 'Recent'}">#1</span>
+                            </div>
+                            <span class="status-pill status-pill-info flex-shrink-0" th:text="${t.status}">OPEN</span>
+                        </li>
+                    </ul>
                 </div>
+
             </div>
         </div>
 
-        <!-- CARD E: QUICK REQUESTS -->
-        <div class="bento-card span-1 requests-card">
-            <h3 class="card-title mb-3">Quick Requests</h3>
-            <div class="request-list">
-                <a href="/itams/software/new" class="request-item">
-                    <i class="bi bi-box-seam text-primary"></i>
-                    <span>Request Software</span>
-                </a>
-                <a href="/itams/nas/folders" class="request-item">
-                    <i class="bi bi-folder-plus text-success"></i>
-                    <span>Request NAS Access</span>
-                </a>
-                <a href="/tickets/new" class="request-item">
-                    <i class="bi bi-plus-circle text-danger"></i>
-                    <span>Open IT Ticket</span>
-                </a>
-            </div>
-        </div>
     </div>
 </main>
 
-<!-- Phase 10 Digital Signature Modal (Reused from your KB) -->
-<div class="modal fade" id="signatureModal" tabindex="-1" aria-hidden="true">
-    <!-- ... Insert your existing signature pad modal code here ... -->
-</div>
-
-<!-- Enterprise CSS Injection -->
-<style th:fragment="employee-portal-styles">
-    /* ==========================================
-       ENTERPRISE BENTO-BOX DESIGN SYSTEM
-       ========================================== */
-    .enterprise-portal {
-        max-width: 1440px;
-        margin: 0 auto;
+<style>
+    .enterprise-workspace {
         padding: 2rem;
-        animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
-
-    .portal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-end;
-        margin-bottom: 2.5rem;
-    }
-
-    .portal-title {
-        font-size: 2.25rem;
-        font-weight: 700;
-        letter-spacing: -0.025em;
-        color: var(--text-primary);
-        margin: 0;
-    }
-
-    .portal-subtitle {
-        color: var(--text-secondary);
-        font-size: 1rem;
-        margin-top: 0.25rem;
-    }
-
-    /* Cmd+K Search Button */
-    .cmd-k-btn {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.6rem 1rem;
-        background: var(--bg-surface);
-        border: 1px solid var(--border-color);
-        border-radius: 10px;
-        color: var(--text-secondary);
-        font-size: 0.875rem;
-        transition: all 0.2s;
-        box-shadow: var(--shadow-sm);
-    }
-    .cmd-k-btn:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
-    .cmd-k-btn kbd {
-        background: var(--bg-sidebar-hover);
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 0.75rem;
-        color: var(--text-primary);
-        border: 1px solid var(--border-color);
-    }
-
-    /* Bento Grid Layout */
-    .bento-grid {
+    .metrics-row {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1.25rem;
     }
-
-    .bento-card {
-        background: var(--bg-surface);
-        border: 1px solid var(--border-color);
-        border-radius: 20px;
-        padding: 1.5rem;
-        display: flex;
-        flex-direction: column;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        position: relative;
-        overflow: hidden;
+    .metric-item {
+        padding: 1.25rem;
     }
-
-    .bento-card:hover {
-        border-color: rgba(37, 99, 235, 0.3);
-        box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.08);
-        transform: translateY(-4px);
-    }
-
-    .span-2 { grid-column: span 2; }
-    .span-3 { grid-column: span 3; }
-
-    /* Hero Asset Card */
     .asset-hero-card {
-        background: linear-gradient(135deg, var(--bg-surface) 0%, rgba(37, 99, 235, 0.02) 100%);
+        background: linear-gradient(145deg, var(--bg-surface, #ffffff) 0%, rgba(37, 99, 235, 0.03) 100%);
     }
-    .asset-content {
+    .qr-img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+    }
+    .quick-action-link {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        flex-grow: 1;
-        margin: 1.5rem 0;
+        gap: 0.85rem;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        color: var(--text-primary, #0f172a);
+        text-decoration: none;
+        border: 1px solid var(--border-color, #e2e8f0);
+        background: var(--bg-surface, #ffffff);
+        transition: all 0.2s ease;
     }
-    .asset-name { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.25rem; }
-    .asset-tag { font-family: var(--font-mono); color: var(--text-secondary); font-size: 0.875rem; }
-    
-    .asset-meta-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1rem;
-        margin-top: 1.5rem;
+    .quick-action-link:hover {
+        border-color: var(--accent-primary, #2563eb);
+        transform: translateX(4px);
     }
-    .meta-label { display: block; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 0.25rem; }
-    .meta-value { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
-
-    .qr-glassmorphism {
-        width: 120px;
-        height: 120px;
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        border-radius: 16px;
-        padding: 12px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-    }
-    .qr-code-img { width: 100%; height: 100%; object-fit: contain; }
-
-    /* Stat & Action Cards */
-    .stat-card, .action-card { justify-content: space-between; }
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
+    .icon-bubble {
+        width: 34px;
+        height: 34px;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.25rem;
-        margin-bottom: 1rem;
+        border-radius: 8px;
+        font-size: 1.1rem;
     }
-    .stat-value { font-size: 2rem; font-weight: 700; line-height: 1; margin: 0; }
-    .stat-label { color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.25rem; }
-    .card-link { font-size: 0.875rem; font-weight: 500; color: var(--accent-primary); margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem; }
-
-    /* Activity Timeline */
-    .card-title { font-size: 1rem; font-weight: 600; margin: 0; }
-    .timeline { margin-top: 1.5rem; flex-grow: 1; overflow-y: auto; max-height: 300px; }
-    .timeline-item { display: flex; gap: 1rem; padding-bottom: 1.5rem; position: relative; }
-    .timeline-item:not(:last-child)::before {
-        content: '';
-        position: absolute;
-        left: 5px;
-        top: 12px;
-        bottom: 0;
-        width: 2px;
-        background: var(--border-color);
+    .extra-small {
+        font-size: 0.75rem;
     }
-    .timeline-marker {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        margin-top: 4px;
-        z-index: 1;
+    .pulse-border {
+        animation: pulseWarn 2s infinite ease-in-out;
     }
-    .timeline-text { margin: 0; font-size: 0.9rem; color: var(--text-primary); }
-    .timeline-time { font-size: 0.75rem; color: var(--text-secondary); }
-
-    /* Quick Requests */
-    .request-list { display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem; }
-    .request-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0.75rem;
-        border-radius: 10px;
-        text-decoration: none;
-        color: var(--text-primary);
-        font-size: 0.9rem;
-        font-weight: 500;
-        transition: background 0.2s;
-    }
-    .request-item:hover { background: var(--bg-sidebar-hover); }
-
-    /* Animations */
-    @keyframes fadeInUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .pulse-warning {
-        animation: pulseBorder 2s infinite;
-    }
-    @keyframes pulseBorder {
-        0% { border-color: var(--border-color); }
-        50% { border-color: var(--warning); box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1); }
-        100% { border-color: var(--border-color); }
-    }
-
-    /* Responsive Breakpoints */
-    @media (max-width: 1024px) {
-        .bento-grid { grid-template-columns: repeat(2, 1fr); }
-        .span-3 { grid-column: span 2; }
-    }
-    @media (max-width: 768px) {
-        .enterprise-portal { padding: 1rem; }
-        .bento-grid { grid-template-columns: 1fr; }
-        .span-2, .span-3 { grid-column: span 1; }
-        .asset-content { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
-        .portal-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    @keyframes pulseWarn {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.2); }
+        50% { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.15); }
     }
 </style>
+
 </body>
 </html>

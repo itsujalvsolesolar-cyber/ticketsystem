@@ -25,4 +25,6 @@ public interface SoftwareLicenseRepository extends JpaRepository<SoftwareLicense
            "LEFT JOIN FETCH s.assignedBy " +
            "WHERE s.employee = :employee AND s.isActive = true")
     List<SoftwareLicense> findByEmployee(@Param("employee") Employee employee);
+
+    List<SoftwareLicense> findByEmployee_Id(Long employeeId);
 }

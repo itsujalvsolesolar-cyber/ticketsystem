@@ -2,7 +2,6 @@ package com.sujal.itsm.itams.service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.sujal.itsm.core.security.CurrentUserService;
 import com.sujal.itsm.itams.enums.AssetStatus;
 import com.sujal.itsm.itams.model.Asset;
-import com.sujal.itsm.itams.model.AssetCategory;
 import com.sujal.itsm.itams.repository.AssetRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -26,9 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 public class AssetService {
 
   private final AssetRepository assetRepository;
-  private final AssetCategoryService categoryService;
   private final CurrentUserService currentUserService;
   private final QrCodeService qrCodeService;
+  private final AssetTagService assetTagService; // Injected tag generator
 
   public Page<Asset> findAll(Pageable pageable) {
     return assetRepository.findAllActive(pageable);
@@ -52,12 +50,17 @@ public class AssetService {
 
   @Transactional
   public Asset create(Asset asset) {
-    // Generate asset tag if not provided
+    // 1. Global identifier: assigned once, decoupled from category/brand/serial
     if (asset.getAssetTag() == null || asset.getAssetTag().isBlank()) {
-      asset.setAssetTag(generateAssetTag(asset.getCategory()));
+      asset.setAssetTag(assetTagService.nextAssetTag());
     }
 
-    // Validate unique serial number
+    // 2. Default status fallback (IN_STOCK / AVAILABLE)
+    if (asset.getStatus() == null) {
+      asset.setStatus(AssetStatus.AVAILABLE);
+    }
+
+    // 3. Prevent duplicate hardware entries
     if (asset.getSerialNumber() != null && !asset.getSerialNumber().isBlank()) {
       if (assetRepository.existsBySerialNumber(asset.getSerialNumber())) {
         throw new IllegalArgumentException(
@@ -65,13 +68,13 @@ public class AssetService {
       }
     }
 
-    // Set created by
+    // 4. Audit trail
     asset.setCreatedBy(currentUserService.getCurrentUser());
 
-    // Save asset
+    // 5. Persist entity
     Asset savedAsset = assetRepository.save(asset);
 
-    // Generate QR code
+    // 6. Generate QR code link
     try {
       String qrCodeUrl = qrCodeService.generateQrCode(savedAsset);
       savedAsset.setQrCodeUrl(qrCodeUrl);
@@ -159,32 +162,5 @@ public class AssetService {
 
   public List<Asset> findAssetsWithExpiringWarranty(int days) {
     return assetRepository.findAssetsWithExpiringWarranty(LocalDate.now().plusDays(days));
-  }
-
-  /**
-   * Generate unique asset tag based on category prefix Format: PREFIX-XXXX (e.g., LT-0001, DS-0002)
-   */
-  private String generateAssetTag(AssetCategory category) {
-    String prefix = category.getPrefix();
-
-    // Find the highest numbered asset in this category
-    Optional<Asset> latestAsset = assetRepository.findLatestByCategory(category);
-
-    int nextNumber = 1;
-    if (latestAsset.isPresent()) {
-      String latestTag = latestAsset.get().getAssetTag();
-      // Extract number from tag (e.g., "LT-0001" -> 1)
-      String[] parts = latestTag.split("-");
-      if (parts.length == 2) {
-        try {
-          nextNumber = Integer.parseInt(parts[1]) + 1;
-        } catch (NumberFormatException e) {
-          log.warn("Could not parse asset tag number: {}", latestTag);
-        }
-      }
-    }
-
-    // Format: PREFIX-0001
-    return String.format("%s-%04d", prefix, nextNumber);
   }
 }

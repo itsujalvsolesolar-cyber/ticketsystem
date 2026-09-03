@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.AccessDeniedHandlerImpl;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 
 @Configuration
@@ -45,50 +44,41 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/ws/**", "/api/v1/public/**")
-            )
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/ws/**", "/api/v1/public/**"))
             .headers(headers -> headers
-                .contentSecurityPolicy(csp -> csp
-                    .policyDirectives(
-                        "default-src 'self'; " +
-                        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://html2canvas.hertzen.com; " +
-                        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
-                        "img-src 'self' data: blob:; " +
-                        "font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
-                        "connect-src 'self' wss: https:; " +
-                        "frame-ancestors 'self'"
-                    )
-                )
-                .referrerPolicy(referrer -> referrer
-                    .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-                )
+                .contentSecurityPolicy(csp -> csp.policyDirectives(
+                    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://cdn.jsdelivr.net https://fonts.gstatic.com;"
+                ))
+                .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .frameOptions(frame -> frame.sameOrigin())
             )
             .authorizeHttpRequests(auth -> auth
-                // Static assets & public endpoints
-                .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/uploads/**", "/login", "/error").permitAll()
+                // 1. PUBLIC & STATIC ASSETS
+                .requestMatchers("/css/**", "/js/**", "/images/**", "/webjars/**", "/uploads/**", "/login", "/error", "/actuator/health").permitAll()
                 
-                // Super Admin & Admin modules
-                .requestMatchers("/admin/**", "/api/v1/admin/**", "/system/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
+                // 2. BASELINE SELF-SERVICE (Any authenticated human)
+                // Covers: Employee Portal, My Tickets, Shift Status, Notifications
+                .requestMatchers("/", "/dashboard", "/employee/**", "/tickets/**", "/notifications/**", "/shifts/**")
+                .hasAnyRole("EMPLOYEE", "IT_EXECUTIVE", "IT_MANAGER", "SUPER_ADMIN")
                 
-                // IAM module
-                .requestMatchers("/iam/**", "/api/v1/iam/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "STAFF", "IT_MANAGER")
+                // 3. IT OPERATIONS (Fulfillment & Support)
+                // Covers: ITAMS Hardware, Software, Digital Access, Label Printing
+                .requestMatchers("/itams/**", "/api/v1/itams/**")
+                .hasAnyRole("IT_EXECUTIVE", "IT_MANAGER", "SUPER_ADMIN")
                 
-                // ITAMS module
-                .requestMatchers("/itams/**", "/api/v1/itams/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "STAFF", "IT_MANAGER", "IT_EXECUTIVE")
+                // 4. IT GOVERNANCE & IAM (Approvals, User Provisioning, Workflows)
+                // Covers: Identity & Access Management, Workflow Builder
+                .requestMatchers("/iam/**", "/api/v1/iam/**", "/admin/workflows/**", "/approval-requests/**")
+                .hasAnyRole("IT_MANAGER", "SUPER_ADMIN")
                 
-                // Executive & Reporting
-                .requestMatchers("/executive/**", "/reports/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "EXECUTIVE", "IT_MANAGER")
+                // 5. SYSTEM ADMINISTRATION & AUDIT (Global Settings, Logs)
+                // Covers: Admin Console, Audit Viewer, Recycle Bin
+                .requestMatchers("/admin/**", "/api/v1/admin/**", "/audit/**", "/system/**", "/executive/**", "/reports/**")
+                .hasRole("SUPER_ADMIN")
                 
-                // Audit & Workflows
-                .requestMatchers("/audit/**", "/workflows/**", "/approval-requests/**").hasAnyRole("ADMIN", "SUPER_ADMIN", "STAFF")
-                
-                // Self-service Employee & Core Ticketing
-                .requestMatchers("/employee/**").hasAnyRole("EMPLOYEE", "ADMIN", "SUPER_ADMIN", "STAFF", "USER")
-                .requestMatchers("/", "/dashboard", "/tickets/**", "/notifications/**", "/shifts/**").authenticated()
-                
-                .anyRequest().authenticated()
+                // 6. LEAST PRIVILEGE ENFORCEMENT: DEFAULT DENY
+                // If a new endpoint is created and not explicitly mapped above, it is blocked.
+                .anyRequest().denyAll()
             )
             .exceptionHandling(ex -> ex
                 .accessDeniedPage("/error?status=403")

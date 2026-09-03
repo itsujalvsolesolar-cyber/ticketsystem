@@ -3,6 +3,7 @@ package com.sujal.itsm.itams.controller;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -27,7 +28,11 @@ public class AssetAllocationController {
     private final AssetService assetService;
     private final EmployeeService employeeService;
 
+    // =========================================================================
+    // 1. ALLOCATION FORM (IT DESK)
+    // =========================================================================
     @GetMapping("/new")
+    @PreAuthorize("hasAuthority('itams:asset.allocate') or hasAnyRole('SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_EXECUTIVE', 'STAFF')")
     public String showAllocationForm(@RequestParam("assetId") Long assetId, Model model) {
         Asset asset = assetService.findById(assetId);
         if (asset.getStatus().name().equals("ASSIGNED")) {
@@ -40,7 +45,11 @@ public class AssetAllocationController {
         return "itams/allocations/new";
     }
 
+    // =========================================================================
+    // 2. PROCESS ALLOCATION (IT DESK)
+    // =========================================================================
     @PostMapping
+    @PreAuthorize("hasAuthority('itams:asset.allocate') or hasAnyRole('SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_EXECUTIVE', 'STAFF')")
     public String processAllocation(@RequestParam("assetId") Long assetId,
                                     @RequestParam("employeeId") Long employeeId,
                                     @RequestParam("condition") String condition,
@@ -60,8 +69,11 @@ public class AssetAllocationController {
         return "redirect:/itams/assets/" + assetId;
     }
 
-    // ===== Employee Review & Accept page =====
+    // =========================================================================
+    // 3. EMPLOYEE ACCEPTANCE VIEW (OBJECT-LEVEL OWNERSHIP ENFORCED)
+    // =========================================================================
     @GetMapping("/{id}/acceptance")
+    @PreAuthorize("@securityEvaluator.isAllocationOwner(authentication, #id) or hasAnyRole('SUPER_ADMIN', 'ADMIN', 'STAFF')")
     public String acceptancePage(@PathVariable Long id, Model model) {
         AssetAllocation allocation = allocationService.findById(id);
         model.addAttribute("allocation", allocation);
@@ -69,7 +81,11 @@ public class AssetAllocationController {
         return "itams/allocations/acceptance";
     }
 
+    // =========================================================================
+    // 4. DIGITAL SIGNATURE SUBMISSION (OBJECT-LEVEL OWNERSHIP ENFORCED)
+    // =========================================================================
     @PostMapping("/{id}/accept")
+    @PreAuthorize("@securityEvaluator.isAllocationOwner(authentication, #id) or hasAnyRole('SUPER_ADMIN', 'ADMIN')")
     public String accept(@PathVariable Long id,
                          @RequestParam String signatureType,
                          @RequestParam(value = "signatureData", required = false) String signatureData,
@@ -88,7 +104,11 @@ public class AssetAllocationController {
         return "redirect:/itams/allocations/" + id + "/acceptance";
     }
 
+    // =========================================================================
+    // 5. ASSET RETURN (IT DESK)
+    // =========================================================================
     @PostMapping("/{id}/return")
+    @PreAuthorize("hasAuthority('itams:asset.return') or hasAnyRole('SUPER_ADMIN', 'ADMIN', 'IT_MANAGER', 'IT_EXECUTIVE', 'STAFF')")
     public String processReturn(@PathVariable Long id,
                                 @RequestParam("condition") String condition,
                                 @RequestParam(value = "notes", required = false) String notes,
@@ -102,11 +122,18 @@ public class AssetAllocationController {
         return "redirect:/itams/assets";
     }
 
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
     private String buildAccessories(List<String> accessories, String other) {
         StringBuilder sb = new StringBuilder();
-        if (accessories != null && !accessories.isEmpty()) sb.append(String.join(", ", accessories));
+        if (accessories != null && !accessories.isEmpty()) {
+            sb.append(String.join(", ", accessories));
+        }
         if (other != null && !other.isBlank()) {
-            if (sb.length() > 0) sb.append(", ");
+            if (sb.length() > 0) {
+                sb.append(", ");
+            }
             sb.append(other.trim());
         }
         return sb.length() > 0 ? sb.toString() : null;
@@ -114,7 +141,9 @@ public class AssetAllocationController {
 
     private String getClientIp(HttpServletRequest request) {
         String xf = request.getHeader("X-Forwarded-For");
-        if (xf == null || xf.isBlank()) return request.getRemoteAddr();
+        if (xf == null || xf.isBlank()) {
+            return request.getRemoteAddr();
+        }
         return xf.split(",")[0].trim();
     }
 }
